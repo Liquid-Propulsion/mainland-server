@@ -25,6 +25,7 @@ func (lockout *Lockout) Run() {
 	}
 	defer socket.Close()
 
+	log.Printf("Successfully initialized lockout system, listening on %s", config.CurrentConfig.Lockout.ListenAddr)
 	for {
 		buf := make([]byte, 1024)
 		len, addr, err := socket.ReadFrom(buf)

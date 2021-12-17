@@ -21,12 +21,13 @@ func NewStagingSystem() *StagingSystem {
 	return staging
 }
 
-func (staging *StagingSystem) UpdateStages() {
+func (staging *StagingSystem) LoadStages() {
 	res := sql.Database.Order("can_id").Find(&staging.stages)
 	if res.Error != nil {
 		log.Printf("Couldn't query for stages: %s", res.Error)
 	}
 	if len(staging.stages) > 0 {
+		staging.currentStage = 0
 		staging.timeLeftInStage = staging.stages[0].Duration
 	}
 }

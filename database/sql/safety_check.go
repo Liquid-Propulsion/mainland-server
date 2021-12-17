@@ -1,6 +1,8 @@
 package sql
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+)
 
 type ConditionType string
 
@@ -21,21 +23,32 @@ const (
 	INFO       Action = "INFO"
 )
 
-type Sensor struct {
-	NodeID   uint8
-	SensorID uint8
-}
+type State string
 
-type Condition struct {
-	Sensor1       Sensor
-	ConditionType ConditionType
-	Sensor2       Sensor
+const (
+	ALL   State = "ALL"
+	SAFE  State = "SAFE"
+	ARMED State = "ARMED"
+	TEST  State = "TEST"
+)
+
+type SafetyCondition struct {
+	gorm.Model
+	ID             *uint
+	SafetyCheckID  *uint
+	SensorNodeID   uint8
+	SensorID       uint8
+	ConditionType  ConditionType
+	ConditionValue uint32
+	Reason         string
 }
 
 type SafetyCheck struct {
 	gorm.Model
+	ID          *uint
 	Name        string
 	Description string
-	Conditions  []Condition
+	ValidState  State
+	Conditions  []SafetyCondition `gorm:"foreignkey:SafetyCheckID"`
 	Action      Action
 }

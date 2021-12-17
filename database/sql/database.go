@@ -17,4 +17,6 @@ func Init() {
 	}
 	Database = db
 	Database.AutoMigrate(&Stage{})
+	Database.AutoMigrate(&SafetyCheck{})
+	Database.AutoMigrate(&SOP{})
 }

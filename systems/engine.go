@@ -26,6 +26,8 @@ type Engine struct {
 	LockoutSystem    *lockout.Lockout
 	SensorsSystem    *SensorsSystem
 	StagingSystem    *StagingSystem
+	SafetySystem     *SafetySystem
+	TestSystem       *TestSystem
 	previousTickTime time.Time
 	hasRPIO          bool
 	testButtonPin    rpio.Pin
@@ -39,13 +41,16 @@ func Init() {
 	engine.LockoutSystem = lockout.New()
 	engine.SensorsSystem = NewSensorsSystem()
 	engine.StagingSystem = NewStagingSystem()
+	engine.SafetySystem = NewSafetySystem()
+	engine.TestSystem = NewTestSystem()
 	engine.previousTickTime = time.Now()
 	engine.hasRPIO = false
 	engine.testButtonPin = 0
+	engine.start()
 	CurrentEngine = engine
 }
 
-func (engine *Engine) Start() {
+func (engine *Engine) start() {
 	err := rpio.Open()
 	if err != nil {
 		log.Printf("couldn't open test button, assuming this is in development mode: %s", err)
@@ -54,14 +59,20 @@ func (engine *Engine) Start() {
 		engine.testButtonPin = rpio.Pin(10)
 		engine.testButtonPin.Input()
 	}
+	engine.StagingSystem.LoadStages()
+	engine.SafetySystem.LoadChecks()
+	engine.TestSystem.Reset()
 	go engine.LockoutSystem.Run()
 	go engine.tickLoop()
 }
 
 func (engine *Engine) tickLoop() {
-	// Safety checks depend on the state, lets go through each state.
+	// Run all Safety Checks in the Safety System, disabling the system if necessary
+	if engine.SafetySystem.Tick(engine.state, engine.SensorsSystem) {
+		engine.SetState(SAFE)
+		return
+	}
 	for {
-		engine.previousTickTime = time.Now()
 		switch engine.state {
 		case ARMED:
 			if engine.LockoutSystem.LockedOut() {
@@ -86,7 +97,20 @@ func (engine *Engine) tickLoop() {
 			if err != nil {
 				log.Printf("Couldn't send stage packet: %s", err)
 			}
+		case TEST:
+			if !engine.TestButtonHeld() {
+				engine.SetState(SAFE)
+				break
+			}
+			err := canbackend.CurrentCANBackend.SendPower(canpackets.PowerPacket{
+				SystemPowered: true,
+			})
+			if err != nil {
+				log.Printf("Couldn't send power packet: %s", err)
+			}
+			engine.TestSystem.Tick()
 		}
+		engine.previousTickTime = time.Now()
 		// There are 50 ticks in every second.
 		time.Sleep(time.Millisecond * 20)
 	}
@@ -111,8 +135,9 @@ func (engine *Engine) SetState(state EngineState) error {
 		}
 	case TEST:
 		if engine.LockoutSystem.LockedOut() && !engine.TestButtonHeld() {
-			return errors.New("when the engine is locked out, the test button must be held")
+			return errors.New("when the engine is locked out, the test button must be held to go into test state")
 		}
+		engine.TestSystem.Reset()
 	}
 	engine.state = state
 	return nil
