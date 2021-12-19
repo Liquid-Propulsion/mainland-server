@@ -5,17 +5,18 @@ import (
 	"time"
 
 	"github.com/Liquid-Propulsion/mainland-server/database/sql"
+	"github.com/Liquid-Propulsion/mainland-server/types"
 )
 
 type StagingSystem struct {
-	stages          []sql.Stage
+	stages          []types.Stage
 	currentStage    int
 	timeLeftInStage time.Duration
 }
 
 func NewStagingSystem() *StagingSystem {
 	staging := new(StagingSystem)
-	staging.stages = make([]sql.Stage, 0)
+	staging.stages = make([]types.Stage, 0)
 	staging.currentStage = 0
 	staging.timeLeftInStage = time.Microsecond
 	return staging
@@ -40,14 +41,14 @@ func (staging *StagingSystem) HasTimeLeft() bool {
 	return staging.timeLeftInStage > time.Millisecond
 }
 
-func (staging *StagingSystem) GetCurrentStage() *sql.Stage {
+func (staging *StagingSystem) GetCurrentStage() *types.Stage {
 	if len(staging.stages) > staging.currentStage {
 		return &staging.stages[staging.currentStage]
 	}
 	return nil
 }
 
-func (staging *StagingSystem) NextStage() *sql.Stage {
+func (staging *StagingSystem) NextStage() *types.Stage {
 	if len(staging.stages) > staging.currentStage+1 {
 		staging.currentStage += 1
 		return &staging.stages[staging.currentStage]

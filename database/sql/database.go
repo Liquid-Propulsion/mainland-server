@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/Liquid-Propulsion/mainland-server/config"
+	"github.com/Liquid-Propulsion/mainland-server/types"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -16,7 +17,10 @@ func Init() {
 		log.Panicf("Couldn't open the database.")
 	}
 	Database = db
-	Database.AutoMigrate(&Stage{})
-	Database.AutoMigrate(&SafetyCheck{})
-	Database.AutoMigrate(&SOP{})
+	Database.AutoMigrate(&types.Stage{})
+	Database.AutoMigrate(&types.SafetyCheck{})
+	Database.AutoMigrate(&types.SOP{})
+	Database.AutoMigrate(&types.Solenoid{})
+	Database.AutoMigrate(&types.User{})
+	Database.AutoMigrate(&types.Sensor{})
 }

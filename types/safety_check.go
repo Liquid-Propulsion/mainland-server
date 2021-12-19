@@ -1,13 +1,14 @@
-package sql
+package types
 
 import (
 	"gorm.io/gorm"
 )
 
-type Solenoid struct {
+type SafetyCheck struct {
 	gorm.Model
 	ID          *uint
 	Name        string
 	Description string
-	CANID       uint8
+	ValidState  EngineState
+	Code        string
 }

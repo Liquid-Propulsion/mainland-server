@@ -6,6 +6,7 @@ import (
 	canpackets "github.com/Liquid-Propulsion/canpackets/go"
 	"github.com/Liquid-Propulsion/mainland-server/canbackend"
 	"github.com/Liquid-Propulsion/mainland-server/database/sql"
+	"github.com/Liquid-Propulsion/mainland-server/types"
 )
 
 type TestSystem struct {
@@ -19,7 +20,7 @@ func NewTestSystem() *TestSystem {
 }
 
 func (test *TestSystem) Reset() {
-	var solenoids []sql.Solenoid
+	var solenoids []types.Solenoid
 	res := sql.Database.Find(&solenoids)
 	if res.Error != nil {
 		log.Printf("Couldn't query for solenoids: %s", res.Error)

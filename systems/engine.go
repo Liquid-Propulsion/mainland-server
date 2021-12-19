@@ -10,55 +10,39 @@ import (
 	canpackets "github.com/Liquid-Propulsion/canpackets/go"
 	"github.com/Liquid-Propulsion/mainland-server/canbackend"
 	"github.com/Liquid-Propulsion/mainland-server/lockout"
-	"github.com/stianeikeland/go-rpio/v4"
-)
-
-type EngineState uint8
-
-const (
-	SAFE EngineState = iota
-	ARMED
-	TEST
+	"github.com/Liquid-Propulsion/mainland-server/types"
 )
 
 type Engine struct {
-	state            EngineState
+	state            types.EngineState
 	LockoutSystem    *lockout.Lockout
 	SensorsSystem    *SensorsSystem
 	StagingSystem    *StagingSystem
 	SafetySystem     *SafetySystem
 	TestSystem       *TestSystem
+	EvalSystem       *EvalSystem
+	TestButton       *TestButton
 	previousTickTime time.Time
-	hasRPIO          bool
-	testButtonPin    rpio.Pin
 }
 
 var CurrentEngine *Engine
 
 func Init() {
 	engine := new(Engine)
-	engine.state = SAFE
+	engine.state = types.SAFE
 	engine.LockoutSystem = lockout.New()
+	engine.TestButton = NewTestButton()
 	engine.SensorsSystem = NewSensorsSystem()
 	engine.StagingSystem = NewStagingSystem()
 	engine.SafetySystem = NewSafetySystem()
 	engine.TestSystem = NewTestSystem()
+	engine.EvalSystem = NewEvalSystem()
 	engine.previousTickTime = time.Now()
-	engine.hasRPIO = false
-	engine.testButtonPin = 0
 	engine.start()
 	CurrentEngine = engine
 }
 
 func (engine *Engine) start() {
-	err := rpio.Open()
-	if err != nil {
-		log.Printf("couldn't open test button, assuming this is in development mode: %s", err)
-	} else {
-		engine.hasRPIO = true
-		engine.testButtonPin = rpio.Pin(10)
-		engine.testButtonPin.Input()
-	}
 	engine.StagingSystem.LoadStages()
 	engine.SafetySystem.LoadChecks()
 	engine.TestSystem.Reset()
@@ -67,17 +51,14 @@ func (engine *Engine) start() {
 }
 
 func (engine *Engine) tickLoop() {
-	// Run all Safety Checks in the Safety System, disabling the system if necessary
-	if engine.SafetySystem.Tick(engine.state, engine.SensorsSystem) {
-		engine.SetState(SAFE)
-		return
-	}
 	for {
+		// Run all Safety Checks in the Safety System, disabling the system if necessary
+		engine.SafetySystem.Tick(engine.state, engine.SensorsSystem)
 		switch engine.state {
-		case ARMED:
+		case types.ARMED:
 			if engine.LockoutSystem.LockedOut() {
 				// If a lockout key is removed while armed, the system is automatically safed.
-				engine.SetState(SAFE)
+				engine.SetState(types.SAFE)
 				break
 			}
 			engine.StagingSystem.DecrementTime(time.Since(engine.previousTickTime))
@@ -97,9 +78,9 @@ func (engine *Engine) tickLoop() {
 			if err != nil {
 				log.Printf("Couldn't send stage packet: %s", err)
 			}
-		case TEST:
+		case types.TEST:
 			if !engine.TestButtonHeld() {
-				engine.SetState(SAFE)
+				engine.SetState(types.SAFE)
 				break
 			}
 			err := canbackend.CurrentCANBackend.SendPower(canpackets.PowerPacket{
@@ -117,23 +98,23 @@ func (engine *Engine) tickLoop() {
 }
 
 func (engine *Engine) TestButtonHeld() bool {
-	if engine.hasRPIO {
-		return engine.testButtonPin.Read() == rpio.High
+	if engine.TestButton.HasRPIO() {
+		return engine.TestButton.ButtonHeld()
 	}
 	return true
 }
 
 func (engine *Engine) HasRPIO() bool {
-	return engine.hasRPIO
+	return engine.TestButton.HasRPIO()
 }
 
-func (engine *Engine) SetState(state EngineState) error {
+func (engine *Engine) SetState(state types.EngineState) error {
 	switch state {
-	case ARMED:
+	case types.ARMED:
 		if engine.LockoutSystem.LockedOut() {
 			return errors.New("the engine is currently locked out: check that all keys are returned")
 		}
-	case TEST:
+	case types.TEST:
 		if engine.LockoutSystem.LockedOut() && !engine.TestButtonHeld() {
 			return errors.New("when the engine is locked out, the test button must be held to go into test state")
 		}
@@ -143,6 +124,6 @@ func (engine *Engine) SetState(state EngineState) error {
 	return nil
 }
 
-func (engine *Engine) State() EngineState {
+func (engine *Engine) State() types.EngineState {
 	return engine.state
 }
