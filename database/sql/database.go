@@ -3,7 +3,6 @@ package sql
 import (
 	"log"
 
-	"github.com/Liquid-Propulsion/mainland-server/config"
 	"github.com/Liquid-Propulsion/mainland-server/types"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -11,8 +10,8 @@ import (
 
 var Database *gorm.DB
 
-func Init() {
-	db, err := gorm.Open(sqlite.Open(config.CurrentConfig.SQLite.DSN), &gorm.Config{})
+func Init(dsn string) {
+	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Panicf("Couldn't open the database.")
 	}

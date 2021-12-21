@@ -20,8 +20,8 @@ const defaultPort = "8080"
 func main() {
 	config.Init()
 	canbackend.Init(config.CurrentConfig.CAN.CANType)
-	sql.Init()
-	timeseries.Init(config.CurrentConfig.TimeSeries.Directory)
+	sql.Init(config.CurrentConfig.SQLite.DSN)
+	timeseries.Init(false, config.CurrentConfig.TimeSeries.Directory)
 	systems.Init()
 
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))

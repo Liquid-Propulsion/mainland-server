@@ -10,11 +10,13 @@ import (
 
 type Lockout struct {
 	lastMessageRecieved time.Time
+	enabled             bool
 }
 
 func New() *Lockout {
 	lockout := new(Lockout)
 	lockout.lastMessageRecieved = time.Unix(0, 0)
+	lockout.enabled = true
 	return lockout
 }
 
@@ -41,8 +43,16 @@ func (lockout *Lockout) Run() {
 	}
 }
 
+func (lockout *Lockout) SetLockoutEnabled(enabled bool) {
+	lockout.enabled = enabled
+}
+
+func (lockout *Lockout) FakePacketRecieved() {
+	lockout.lastMessageRecieved = time.Now()
+}
+
 func (lockout *Lockout) LockedOut() bool {
-	if config.CurrentConfig.Lockout.Enabled {
+	if config.CurrentConfig.Lockout.Enabled && lockout.enabled {
 		return time.Since(lockout.lastMessageRecieved) > time.Millisecond*40
 	}
 	return false

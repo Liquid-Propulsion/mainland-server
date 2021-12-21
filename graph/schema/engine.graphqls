@@ -1,0 +1,15 @@
+# The States of the current engine
+enum EngineState {
+    SAFE
+    ARMED
+	TEST
+	ESTOP
+}
+
+# The overall engine data. Critical for safety
+type Engine {
+    engineState: EngineState!
+    isRPIO: Boolean!
+    testButtonHeld: Boolean!
+    lockoutEnabled: Boolean!
+}

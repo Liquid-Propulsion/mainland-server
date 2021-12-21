@@ -6,5 +6,6 @@ const (
 	SAFE EngineState = iota
 	ARMED
 	TEST
+	ESTOP
 	ALL
 )

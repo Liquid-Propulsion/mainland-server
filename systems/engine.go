@@ -43,8 +43,8 @@ func Init() {
 }
 
 func (engine *Engine) start() {
-	engine.StagingSystem.LoadStages()
-	engine.SafetySystem.LoadChecks()
+	engine.StagingSystem.Reset()
+	engine.SafetySystem.Reset()
 	engine.TestSystem.Reset()
 	go engine.LockoutSystem.Run()
 	go engine.tickLoop()
@@ -54,6 +54,14 @@ func (engine *Engine) tickLoop() {
 	for {
 		// Run all Safety Checks in the Safety System, disabling the system if necessary
 		engine.SafetySystem.Tick(engine.state, engine.SensorsSystem)
+		if engine.state != types.ESTOP {
+			err := canbackend.CurrentCANBackend.SendPower(canpackets.PowerPacket{
+				SystemPowered: true,
+			})
+			if err != nil {
+				log.Printf("Couldn't send power packet: %s", err)
+			}
+		}
 		switch engine.state {
 		case types.ARMED:
 			if engine.LockoutSystem.LockedOut() {
@@ -63,7 +71,9 @@ func (engine *Engine) tickLoop() {
 			}
 			engine.StagingSystem.DecrementTime(time.Since(engine.previousTickTime))
 			if !engine.StagingSystem.HasTimeLeft() {
-				engine.StagingSystem.NextStage()
+				if engine.StagingSystem.NextStage() == nil {
+					engine.SetState(types.SAFE)
+				}
 			}
 			err := canbackend.CurrentCANBackend.SendPower(canpackets.PowerPacket{
 				SystemPowered: true,
@@ -71,12 +81,15 @@ func (engine *Engine) tickLoop() {
 			if err != nil {
 				log.Printf("Couldn't send power packet: %s", err)
 			}
-			err = canbackend.CurrentCANBackend.SendStage(canpackets.StagePacket{
-				SystemReady: true,
-				Stage:       canpackets.Stage(engine.StagingSystem.GetCurrentStage().CANID),
-			})
-			if err != nil {
-				log.Printf("Couldn't send stage packet: %s", err)
+			stage := engine.StagingSystem.GetCurrentStage()
+			if stage != nil {
+				err = canbackend.CurrentCANBackend.SendStage(canpackets.StagePacket{
+					SystemReady: true,
+					Stage:       canpackets.Stage(engine.StagingSystem.GetCurrentStage().CANID),
+				})
+				if err != nil {
+					log.Printf("Couldn't send stage packet: %s", err)
+				}
 			}
 		case types.TEST:
 			if !engine.TestButtonHeld() {
@@ -98,10 +111,7 @@ func (engine *Engine) tickLoop() {
 }
 
 func (engine *Engine) TestButtonHeld() bool {
-	if engine.TestButton.HasRPIO() {
-		return engine.TestButton.ButtonHeld()
-	}
-	return true
+	return engine.TestButton.ButtonHeld()
 }
 
 func (engine *Engine) HasRPIO() bool {
@@ -110,6 +120,8 @@ func (engine *Engine) HasRPIO() bool {
 
 func (engine *Engine) SetState(state types.EngineState) error {
 	switch state {
+	case types.SAFE:
+		engine.StagingSystem.Reset()
 	case types.ARMED:
 		if engine.LockoutSystem.LockedOut() {
 			return errors.New("the engine is currently locked out: check that all keys are returned")

@@ -1,28 +1,14 @@
-# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
-
-type Todo {
-  id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
-}
-
-type User {
-  id: ID!
-  name: String!
-}
-
 type Query {
-  todos: [Todo!]!
-}
-
-input NewTodo {
-  text: String!
-  userId: String!
+  engine: Engine!
+  users: [User!]!
 }
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo!
+  # Set the current engine's state.
+  setEngineState(state: EngineState): Engine!
+  # Create a new user.
+  createUser(user: UserInput!): Boolean!
+  # Update your information. You can only update your own information.
+  updateUserInfo(user: UserInput!): Boolean!
+  # 
 }

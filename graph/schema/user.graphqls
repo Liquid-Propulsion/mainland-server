@@ -1,0 +1,13 @@
+# The Information available on users for all.
+type User {
+    id: ID
+    name: String!
+    username: String!
+}
+
+# The Input for creating a new user.
+input UserInput {
+    name: String!
+    username: String!
+    password: String!
+}

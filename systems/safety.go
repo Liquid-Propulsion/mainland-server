@@ -17,7 +17,7 @@ func NewSafetySystem() *SafetySystem {
 	return safety
 }
 
-func (safety *SafetySystem) LoadChecks() {
+func (safety *SafetySystem) Reset() {
 	res := sql.Database.Find(&safety.safetyChecks)
 	if res.Error != nil {
 		log.Printf("Couldn't query for safety checks: %s", res.Error)
