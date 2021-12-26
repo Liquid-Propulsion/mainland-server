@@ -1,12 +1,18 @@
 # The Information available on users for all.
 type User {
-    id: ID
+    id: ID!
+    name: String!
+    username: String!
+}
+
+# The Input for updateing a user.
+input UpdateUserInput {
     name: String!
     username: String!
 }
 
 # The Input for creating a new user.
-input UserInput {
+input CreateUserInput {
     name: String!
     username: String!
     password: String!

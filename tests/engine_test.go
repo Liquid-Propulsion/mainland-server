@@ -45,7 +45,7 @@ func TestDefaultEngineState(t *testing.T) {
 
 	systems.CurrentEngine.SetState(types.TEST)
 
-	assert.Equal(t, systems.CurrentEngine.State(), types.TEST, "Engine is not in test mode.")
+	assert.Equal(t, systems.CurrentEngine.State(), types.SAFE, "Engine is not in test mode.")
 
 	// Reenable Lockout Safety and test
 

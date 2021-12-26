@@ -1,0 +1,12 @@
+type Solenoid {
+    id: ID!
+    name: String!
+    description: String!
+    can_id: Int!
+}
+
+input SolenoidInput {
+    name: String!
+    description: String!
+    can_id: Int!
+}

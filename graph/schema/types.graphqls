@@ -1,0 +1,5 @@
+# A Duration of some type
+scalar Duration
+
+# A DateTime of some type
+scalar DateTime

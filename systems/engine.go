@@ -136,6 +136,15 @@ func (engine *Engine) SetState(state types.EngineState) error {
 	return nil
 }
 
+func (engine *Engine) EngineInfo() types.Engine {
+	return types.Engine{
+		EngineState:    engine.state,
+		IsRpio:         engine.HasRPIO(),
+		TestButtonHeld: engine.TestButtonHeld(),
+		LockoutEnabled: engine.LockoutSystem.LockedOut(),
+	}
+}
+
 func (engine *Engine) State() types.EngineState {
 	return engine.state
 }

@@ -1,14 +1,60 @@
 type Query {
+  # Returns the current Engine.
   engine: Engine!
+  # Returns all users.
   users: [User!]!
+  # Returns all stages.
+  stages: [Stage!]!
+  # Returns all solenoids
+  solenoids: [Solenoid!]!
+  # Returns all sensors
+  sensors: [Sensor!]!
+  # Returns all safety checks
+  safety_checks: [SafetyCheck!]!
 }
 
 type Mutation {
+  # -----------------ENGINE-----------------
   # Set the current engine's state.
-  setEngineState(state: EngineState): Engine!
+  setEngineState(state: EngineState!): Engine!
+
+  # -----------------USER-----------------
   # Create a new user.
-  createUser(user: UserInput!): Boolean!
+  createUser(user: CreateUserInput!): User!
   # Update your information. You can only update your own information.
-  updateUserInfo(user: UserInput!): Boolean!
-  # 
+  updateUser(id: ID!, user: UpdateUserInput!): User!
+  # Delete a user by ID.
+  deleteUser(id: ID!): User!
+
+  # -----------------STAGE-----------------
+  # Create a new stage.
+  createStage(stage: StageInput!): Stage!
+  # Update a stage.
+  updateStage(id: ID!, stage: StageInput!): Stage!
+  # Delete a stage.
+  deleteStage(id: ID!): Stage!
+
+  # -----------------SOLENOID-----------------
+  # Create a new solenoid.
+  createSolenoid(solenoid: SolenoidInput!): Solenoid!
+  # Update a solenoid.
+  updateSolenoid(id: ID!, solenoid: SolenoidInput!): Solenoid!
+  # Delete a solenoid.
+  deleteSolenoid(id: ID!): Solenoid!
+
+  # -----------------SENSOR-----------------
+  # Create a new sensor.
+  createSensor(sensor: SensorInput!): Sensor!
+  # Update a sensor.
+  updateSensor(id: ID!, sensor: SensorInput!): Sensor!
+  # Delete a sensor.
+  deleteSensor(id: ID!): Sensor!
+
+  # -----------------SAFETY CHECK-----------------
+  # Create a new safety check.
+  createSafetyCheck(check: SafetyCheckInput!): SafetyCheck!
+  # Update a sensor.
+  updateSafetyCheck(id: ID!, sensor: SafetyCheckInput!): SafetyCheck!
+  # Delete a sensor.
+  deleteSafetyCheck(id: ID!): SafetyCheck!
 }

@@ -2,14 +2,49 @@
 
 package types
 
-type NewTodo struct {
-	Text   string `json:"text"`
-	UserID string `json:"userId"`
+type CreateUserInput struct {
+	Name     string `json:"name"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
-type Todo struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
-	Done bool   `json:"done"`
-	User *User  `json:"user"`
+type Engine struct {
+	EngineState    EngineState `json:"engineState"`
+	IsRpio         bool        `json:"isRPIO"`
+	TestButtonHeld bool        `json:"testButtonHeld"`
+	LockoutEnabled bool        `json:"lockoutEnabled"`
+}
+
+type SafetyCheckInput struct {
+	Name        string      `json:"name"`
+	Description string      `json:"description"`
+	ValidState  EngineState `json:"valid_state"`
+	Code        string      `json:"code"`
+}
+
+type SensorInput struct {
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	NodeID        int    `json:"node_id"`
+	SensorID      int    `json:"sensor_id"`
+	TransformCode string `json:"transform_code"`
+}
+
+type SolenoidInput struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	CanID       int    `json:"can_id"`
+}
+
+type StageInput struct {
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	CanID        int    `json:"can_id"`
+	PreStageCode string `json:"pre_stage_code"`
+	Duration     string `json:"duration"`
+}
+
+type UpdateUserInput struct {
+	Name     string `json:"name"`
+	Username string `json:"username"`
 }

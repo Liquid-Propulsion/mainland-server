@@ -1,0 +1,16 @@
+type Sensor {
+    id: ID!
+    name: String!
+    description: String!
+    node_id: Int!
+    sensor_id: Int!
+    transform_code: String!
+}
+
+input SensorInput {
+    name: String!
+    description: String!
+    node_id: Int!
+    sensor_id: Int!
+    transform_code: String!
+}

@@ -1,3 +1,16 @@
 type Stage {
-    
+	id: ID!
+	name: String!
+    description: String!
+    can_id: Int!
+    pre_stage_code: String!
+    duration: Duration!
+}
+
+input StageInput {
+    name: String!
+    description: String!
+    can_id: Int!
+    pre_stage_code: String!
+    duration: Duration!
 }

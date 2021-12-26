@@ -37,6 +37,10 @@ type Config struct {
 type ResolverRoot interface {
 	Mutation() MutationResolver
 	Query() QueryResolver
+	SafetyCheck() SafetyCheckResolver
+	Sensor() SensorResolver
+	Solenoid() SolenoidResolver
+	Stage() StageResolver
 	User() UserResolver
 }
 
@@ -44,32 +48,127 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Engine struct {
+		EngineState    func(childComplexity int) int
+		IsRpio         func(childComplexity int) int
+		LockoutEnabled func(childComplexity int) int
+		TestButtonHeld func(childComplexity int) int
+	}
+
 	Mutation struct {
-		CreateTodo func(childComplexity int, input types.NewTodo) int
+		CreateSafetyCheck func(childComplexity int, check types.SafetyCheckInput) int
+		CreateSensor      func(childComplexity int, sensor types.SensorInput) int
+		CreateSolenoid    func(childComplexity int, solenoid types.SolenoidInput) int
+		CreateStage       func(childComplexity int, stage types.StageInput) int
+		CreateUser        func(childComplexity int, user types.CreateUserInput) int
+		DeleteSafetyCheck func(childComplexity int, id string) int
+		DeleteSensor      func(childComplexity int, id string) int
+		DeleteSolenoid    func(childComplexity int, id string) int
+		DeleteStage       func(childComplexity int, id string) int
+		DeleteUser        func(childComplexity int, id string) int
+		SetEngineState    func(childComplexity int, state types.EngineState) int
+		UpdateSafetyCheck func(childComplexity int, id string, sensor types.SafetyCheckInput) int
+		UpdateSensor      func(childComplexity int, id string, sensor types.SensorInput) int
+		UpdateSolenoid    func(childComplexity int, id string, solenoid types.SolenoidInput) int
+		UpdateStage       func(childComplexity int, id string, stage types.StageInput) int
+		UpdateUser        func(childComplexity int, id string, user types.UpdateUserInput) int
 	}
 
 	Query struct {
-		Todos func(childComplexity int) int
+		Engine       func(childComplexity int) int
+		SafetyChecks func(childComplexity int) int
+		Sensors      func(childComplexity int) int
+		Solenoids    func(childComplexity int) int
+		Stages       func(childComplexity int) int
+		Users        func(childComplexity int) int
 	}
 
-	Todo struct {
-		Done func(childComplexity int) int
-		ID   func(childComplexity int) int
-		Text func(childComplexity int) int
-		User func(childComplexity int) int
+	SafetyCheck struct {
+		Code        func(childComplexity int) int
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
+		ValidState  func(childComplexity int) int
+	}
+
+	Sensor struct {
+		Description   func(childComplexity int) int
+		ID            func(childComplexity int) int
+		Name          func(childComplexity int) int
+		NodeID        func(childComplexity int) int
+		SensorID      func(childComplexity int) int
+		TransformCode func(childComplexity int) int
+	}
+
+	Solenoid struct {
+		CanID       func(childComplexity int) int
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Name        func(childComplexity int) int
+	}
+
+	Stage struct {
+		CanID        func(childComplexity int) int
+		Description  func(childComplexity int) int
+		Duration     func(childComplexity int) int
+		ID           func(childComplexity int) int
+		Name         func(childComplexity int) int
+		PreStageCode func(childComplexity int) int
 	}
 
 	User struct {
-		ID   func(childComplexity int) int
-		Name func(childComplexity int) int
+		ID       func(childComplexity int) int
+		Name     func(childComplexity int) int
+		Username func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
-	CreateTodo(ctx context.Context, input types.NewTodo) (*types.Todo, error)
+	SetEngineState(ctx context.Context, state types.EngineState) (*types.Engine, error)
+	CreateUser(ctx context.Context, user types.CreateUserInput) (*types.User, error)
+	UpdateUser(ctx context.Context, id string, user types.UpdateUserInput) (*types.User, error)
+	DeleteUser(ctx context.Context, id string) (*types.User, error)
+	CreateStage(ctx context.Context, stage types.StageInput) (*types.Stage, error)
+	UpdateStage(ctx context.Context, id string, stage types.StageInput) (*types.Stage, error)
+	DeleteStage(ctx context.Context, id string) (*types.Stage, error)
+	CreateSolenoid(ctx context.Context, solenoid types.SolenoidInput) (*types.Solenoid, error)
+	UpdateSolenoid(ctx context.Context, id string, solenoid types.SolenoidInput) (*types.Solenoid, error)
+	DeleteSolenoid(ctx context.Context, id string) (*types.Solenoid, error)
+	CreateSensor(ctx context.Context, sensor types.SensorInput) (*types.Sensor, error)
+	UpdateSensor(ctx context.Context, id string, sensor types.SensorInput) (*types.Sensor, error)
+	DeleteSensor(ctx context.Context, id string) (*types.Sensor, error)
+	CreateSafetyCheck(ctx context.Context, check types.SafetyCheckInput) (*types.SafetyCheck, error)
+	UpdateSafetyCheck(ctx context.Context, id string, sensor types.SafetyCheckInput) (*types.SafetyCheck, error)
+	DeleteSafetyCheck(ctx context.Context, id string) (*types.SafetyCheck, error)
 }
 type QueryResolver interface {
-	Todos(ctx context.Context) ([]*types.Todo, error)
+	Engine(ctx context.Context) (*types.Engine, error)
+	Users(ctx context.Context) ([]*types.User, error)
+	Stages(ctx context.Context) ([]*types.Stage, error)
+	Solenoids(ctx context.Context) ([]*types.Solenoid, error)
+	Sensors(ctx context.Context) ([]*types.Sensor, error)
+	SafetyChecks(ctx context.Context) ([]*types.SafetyCheck, error)
+}
+type SafetyCheckResolver interface {
+	ID(ctx context.Context, obj *types.SafetyCheck) (string, error)
+}
+type SensorResolver interface {
+	ID(ctx context.Context, obj *types.Sensor) (string, error)
+
+	NodeID(ctx context.Context, obj *types.Sensor) (int, error)
+	SensorID(ctx context.Context, obj *types.Sensor) (int, error)
+}
+type SolenoidResolver interface {
+	ID(ctx context.Context, obj *types.Solenoid) (string, error)
+
+	CanID(ctx context.Context, obj *types.Solenoid) (int, error)
+}
+type StageResolver interface {
+	ID(ctx context.Context, obj *types.Stage) (string, error)
+
+	CanID(ctx context.Context, obj *types.Stage) (int, error)
+
+	Duration(ctx context.Context, obj *types.Stage) (string, error)
 }
 type UserResolver interface {
 	ID(ctx context.Context, obj *types.User) (string, error)
@@ -90,52 +189,414 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	_ = ec
 	switch typeName + "." + field {
 
-	case "Mutation.createTodo":
-		if e.complexity.Mutation.CreateTodo == nil {
+	case "Engine.engineState":
+		if e.complexity.Engine.EngineState == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_createTodo_args(context.TODO(), rawArgs)
+		return e.complexity.Engine.EngineState(childComplexity), true
+
+	case "Engine.isRPIO":
+		if e.complexity.Engine.IsRpio == nil {
+			break
+		}
+
+		return e.complexity.Engine.IsRpio(childComplexity), true
+
+	case "Engine.lockoutEnabled":
+		if e.complexity.Engine.LockoutEnabled == nil {
+			break
+		}
+
+		return e.complexity.Engine.LockoutEnabled(childComplexity), true
+
+	case "Engine.testButtonHeld":
+		if e.complexity.Engine.TestButtonHeld == nil {
+			break
+		}
+
+		return e.complexity.Engine.TestButtonHeld(childComplexity), true
+
+	case "Mutation.createSafetyCheck":
+		if e.complexity.Mutation.CreateSafetyCheck == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createSafetyCheck_args(context.TODO(), rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateTodo(childComplexity, args["input"].(types.NewTodo)), true
+		return e.complexity.Mutation.CreateSafetyCheck(childComplexity, args["check"].(types.SafetyCheckInput)), true
 
-	case "Query.todos":
-		if e.complexity.Query.Todos == nil {
+	case "Mutation.createSensor":
+		if e.complexity.Mutation.CreateSensor == nil {
 			break
 		}
 
-		return e.complexity.Query.Todos(childComplexity), true
+		args, err := ec.field_Mutation_createSensor_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
 
-	case "Todo.done":
-		if e.complexity.Todo.Done == nil {
+		return e.complexity.Mutation.CreateSensor(childComplexity, args["sensor"].(types.SensorInput)), true
+
+	case "Mutation.createSolenoid":
+		if e.complexity.Mutation.CreateSolenoid == nil {
 			break
 		}
 
-		return e.complexity.Todo.Done(childComplexity), true
+		args, err := ec.field_Mutation_createSolenoid_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
 
-	case "Todo.id":
-		if e.complexity.Todo.ID == nil {
+		return e.complexity.Mutation.CreateSolenoid(childComplexity, args["solenoid"].(types.SolenoidInput)), true
+
+	case "Mutation.createStage":
+		if e.complexity.Mutation.CreateStage == nil {
 			break
 		}
 
-		return e.complexity.Todo.ID(childComplexity), true
+		args, err := ec.field_Mutation_createStage_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
 
-	case "Todo.text":
-		if e.complexity.Todo.Text == nil {
+		return e.complexity.Mutation.CreateStage(childComplexity, args["stage"].(types.StageInput)), true
+
+	case "Mutation.createUser":
+		if e.complexity.Mutation.CreateUser == nil {
 			break
 		}
 
-		return e.complexity.Todo.Text(childComplexity), true
+		args, err := ec.field_Mutation_createUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
 
-	case "Todo.user":
-		if e.complexity.Todo.User == nil {
+		return e.complexity.Mutation.CreateUser(childComplexity, args["user"].(types.CreateUserInput)), true
+
+	case "Mutation.deleteSafetyCheck":
+		if e.complexity.Mutation.DeleteSafetyCheck == nil {
 			break
 		}
 
-		return e.complexity.Todo.User(childComplexity), true
+		args, err := ec.field_Mutation_deleteSafetyCheck_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteSafetyCheck(childComplexity, args["id"].(string)), true
+
+	case "Mutation.deleteSensor":
+		if e.complexity.Mutation.DeleteSensor == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteSensor_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteSensor(childComplexity, args["id"].(string)), true
+
+	case "Mutation.deleteSolenoid":
+		if e.complexity.Mutation.DeleteSolenoid == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteSolenoid_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteSolenoid(childComplexity, args["id"].(string)), true
+
+	case "Mutation.deleteStage":
+		if e.complexity.Mutation.DeleteStage == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteStage_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteStage(childComplexity, args["id"].(string)), true
+
+	case "Mutation.deleteUser":
+		if e.complexity.Mutation.DeleteUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.DeleteUser(childComplexity, args["id"].(string)), true
+
+	case "Mutation.setEngineState":
+		if e.complexity.Mutation.SetEngineState == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setEngineState_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SetEngineState(childComplexity, args["state"].(types.EngineState)), true
+
+	case "Mutation.updateSafetyCheck":
+		if e.complexity.Mutation.UpdateSafetyCheck == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateSafetyCheck_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateSafetyCheck(childComplexity, args["id"].(string), args["sensor"].(types.SafetyCheckInput)), true
+
+	case "Mutation.updateSensor":
+		if e.complexity.Mutation.UpdateSensor == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateSensor_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateSensor(childComplexity, args["id"].(string), args["sensor"].(types.SensorInput)), true
+
+	case "Mutation.updateSolenoid":
+		if e.complexity.Mutation.UpdateSolenoid == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateSolenoid_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateSolenoid(childComplexity, args["id"].(string), args["solenoid"].(types.SolenoidInput)), true
+
+	case "Mutation.updateStage":
+		if e.complexity.Mutation.UpdateStage == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateStage_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateStage(childComplexity, args["id"].(string), args["stage"].(types.StageInput)), true
+
+	case "Mutation.updateUser":
+		if e.complexity.Mutation.UpdateUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(string), args["user"].(types.UpdateUserInput)), true
+
+	case "Query.engine":
+		if e.complexity.Query.Engine == nil {
+			break
+		}
+
+		return e.complexity.Query.Engine(childComplexity), true
+
+	case "Query.safety_checks":
+		if e.complexity.Query.SafetyChecks == nil {
+			break
+		}
+
+		return e.complexity.Query.SafetyChecks(childComplexity), true
+
+	case "Query.sensors":
+		if e.complexity.Query.Sensors == nil {
+			break
+		}
+
+		return e.complexity.Query.Sensors(childComplexity), true
+
+	case "Query.solenoids":
+		if e.complexity.Query.Solenoids == nil {
+			break
+		}
+
+		return e.complexity.Query.Solenoids(childComplexity), true
+
+	case "Query.stages":
+		if e.complexity.Query.Stages == nil {
+			break
+		}
+
+		return e.complexity.Query.Stages(childComplexity), true
+
+	case "Query.users":
+		if e.complexity.Query.Users == nil {
+			break
+		}
+
+		return e.complexity.Query.Users(childComplexity), true
+
+	case "SafetyCheck.code":
+		if e.complexity.SafetyCheck.Code == nil {
+			break
+		}
+
+		return e.complexity.SafetyCheck.Code(childComplexity), true
+
+	case "SafetyCheck.description":
+		if e.complexity.SafetyCheck.Description == nil {
+			break
+		}
+
+		return e.complexity.SafetyCheck.Description(childComplexity), true
+
+	case "SafetyCheck.id":
+		if e.complexity.SafetyCheck.ID == nil {
+			break
+		}
+
+		return e.complexity.SafetyCheck.ID(childComplexity), true
+
+	case "SafetyCheck.name":
+		if e.complexity.SafetyCheck.Name == nil {
+			break
+		}
+
+		return e.complexity.SafetyCheck.Name(childComplexity), true
+
+	case "SafetyCheck.valid_state":
+		if e.complexity.SafetyCheck.ValidState == nil {
+			break
+		}
+
+		return e.complexity.SafetyCheck.ValidState(childComplexity), true
+
+	case "Sensor.description":
+		if e.complexity.Sensor.Description == nil {
+			break
+		}
+
+		return e.complexity.Sensor.Description(childComplexity), true
+
+	case "Sensor.id":
+		if e.complexity.Sensor.ID == nil {
+			break
+		}
+
+		return e.complexity.Sensor.ID(childComplexity), true
+
+	case "Sensor.name":
+		if e.complexity.Sensor.Name == nil {
+			break
+		}
+
+		return e.complexity.Sensor.Name(childComplexity), true
+
+	case "Sensor.node_id":
+		if e.complexity.Sensor.NodeID == nil {
+			break
+		}
+
+		return e.complexity.Sensor.NodeID(childComplexity), true
+
+	case "Sensor.sensor_id":
+		if e.complexity.Sensor.SensorID == nil {
+			break
+		}
+
+		return e.complexity.Sensor.SensorID(childComplexity), true
+
+	case "Sensor.transform_code":
+		if e.complexity.Sensor.TransformCode == nil {
+			break
+		}
+
+		return e.complexity.Sensor.TransformCode(childComplexity), true
+
+	case "Solenoid.can_id":
+		if e.complexity.Solenoid.CanID == nil {
+			break
+		}
+
+		return e.complexity.Solenoid.CanID(childComplexity), true
+
+	case "Solenoid.description":
+		if e.complexity.Solenoid.Description == nil {
+			break
+		}
+
+		return e.complexity.Solenoid.Description(childComplexity), true
+
+	case "Solenoid.id":
+		if e.complexity.Solenoid.ID == nil {
+			break
+		}
+
+		return e.complexity.Solenoid.ID(childComplexity), true
+
+	case "Solenoid.name":
+		if e.complexity.Solenoid.Name == nil {
+			break
+		}
+
+		return e.complexity.Solenoid.Name(childComplexity), true
+
+	case "Stage.can_id":
+		if e.complexity.Stage.CanID == nil {
+			break
+		}
+
+		return e.complexity.Stage.CanID(childComplexity), true
+
+	case "Stage.description":
+		if e.complexity.Stage.Description == nil {
+			break
+		}
+
+		return e.complexity.Stage.Description(childComplexity), true
+
+	case "Stage.duration":
+		if e.complexity.Stage.Duration == nil {
+			break
+		}
+
+		return e.complexity.Stage.Duration(childComplexity), true
+
+	case "Stage.id":
+		if e.complexity.Stage.ID == nil {
+			break
+		}
+
+		return e.complexity.Stage.ID(childComplexity), true
+
+	case "Stage.name":
+		if e.complexity.Stage.Name == nil {
+			break
+		}
+
+		return e.complexity.Stage.Name(childComplexity), true
+
+	case "Stage.pre_stage_code":
+		if e.complexity.Stage.PreStageCode == nil {
+			break
+		}
+
+		return e.complexity.Stage.PreStageCode(childComplexity), true
 
 	case "User.id":
 		if e.complexity.User.ID == nil {
@@ -150,6 +611,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.Name(childComplexity), true
+
+	case "User.username":
+		if e.complexity.User.Username == nil {
+			break
+		}
+
+		return e.complexity.User.Username(childComplexity), true
 
 	}
 	return 0, false
@@ -215,35 +683,164 @@ func (ec *executionContext) introspectType(name string) (*introspection.Type, er
 }
 
 var sources = []*ast.Source{
-	{Name: "graph/schema/schema.graphqls", Input: `# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
-
-type Todo {
-  id: ID!
-  text: String!
-  done: Boolean!
-  user: User!
+	{Name: "graph/schema/engine.graphqls", Input: `# The States of the current engine
+enum EngineState {
+    SAFE
+    ARMED
+	TEST
+	ESTOP
 }
 
-type User {
-  id: ID!
-  name: String!
+# The overall engine data. Critical for safety
+type Engine {
+    engineState: EngineState!
+    isRPIO: Boolean!
+    testButtonHeld: Boolean!
+    lockoutEnabled: Boolean!
+}`, BuiltIn: false},
+	{Name: "graph/schema/safety_check.graphqls", Input: `type SafetyCheck {
+    id: ID!
+    name: String!
+    description: String!
+    valid_state: EngineState!
+    code: String!
 }
 
-type Query {
-  todos: [Todo!]!
-}
-
-input NewTodo {
-  text: String!
-  userId: String!
+input SafetyCheckInput {
+    name: String!
+    description: String!
+    valid_state: EngineState!
+    code: String!
+}`, BuiltIn: false},
+	{Name: "graph/schema/schema.graphqls", Input: `type Query {
+  # Returns the current Engine.
+  engine: Engine!
+  # Returns all users.
+  users: [User!]!
+  # Returns all stages.
+  stages: [Stage!]!
+  # Returns all solenoids
+  solenoids: [Solenoid!]!
+  # Returns all sensors
+  sensors: [Sensor!]!
+  # Returns all safety checks
+  safety_checks: [SafetyCheck!]!
 }
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo!
+  # -----------------ENGINE-----------------
+  # Set the current engine's state.
+  setEngineState(state: EngineState!): Engine!
+
+  # -----------------USER-----------------
+  # Create a new user.
+  createUser(user: CreateUserInput!): User!
+  # Update your information. You can only update your own information.
+  updateUser(id: ID!, user: UpdateUserInput!): User!
+  # Delete a user by ID.
+  deleteUser(id: ID!): User!
+
+  # -----------------STAGE-----------------
+  # Create a new stage.
+  createStage(stage: StageInput!): Stage!
+  # Update a stage.
+  updateStage(id: ID!, stage: StageInput!): Stage!
+  # Delete a stage.
+  deleteStage(id: ID!): Stage!
+
+  # -----------------SOLENOID-----------------
+  # Create a new solenoid.
+  createSolenoid(solenoid: SolenoidInput!): Solenoid!
+  # Update a solenoid.
+  updateSolenoid(id: ID!, solenoid: SolenoidInput!): Solenoid!
+  # Delete a solenoid.
+  deleteSolenoid(id: ID!): Solenoid!
+
+  # -----------------SENSOR-----------------
+  # Create a new sensor.
+  createSensor(sensor: SensorInput!): Sensor!
+  # Update a sensor.
+  updateSensor(id: ID!, sensor: SensorInput!): Sensor!
+  # Delete a sensor.
+  deleteSensor(id: ID!): Sensor!
+
+  # -----------------SAFETY CHECK-----------------
+  # Create a new safety check.
+  createSafetyCheck(check: SafetyCheckInput!): SafetyCheck!
+  # Update a sensor.
+  updateSafetyCheck(id: ID!, sensor: SafetyCheckInput!): SafetyCheck!
+  # Delete a sensor.
+  deleteSafetyCheck(id: ID!): SafetyCheck!
 }
 `, BuiltIn: false},
+	{Name: "graph/schema/sensor.graphqls", Input: `type Sensor {
+    id: ID!
+    name: String!
+    description: String!
+    node_id: Int!
+    sensor_id: Int!
+    transform_code: String!
+}
+
+input SensorInput {
+    name: String!
+    description: String!
+    node_id: Int!
+    sensor_id: Int!
+    transform_code: String!
+}`, BuiltIn: false},
+	{Name: "graph/schema/solenoid.graphqls", Input: `type Solenoid {
+    id: ID!
+    name: String!
+    description: String!
+    can_id: Int!
+}
+
+input SolenoidInput {
+    name: String!
+    description: String!
+    can_id: Int!
+}`, BuiltIn: false},
+	{Name: "graph/schema/stage.graphqls", Input: `type Stage {
+	id: ID!
+	name: String!
+    description: String!
+    can_id: Int!
+    pre_stage_code: String!
+    duration: Duration!
+}
+
+input StageInput {
+    name: String!
+    description: String!
+    can_id: Int!
+    pre_stage_code: String!
+    duration: Duration!
+}`, BuiltIn: false},
+	{Name: "graph/schema/types.graphqls", Input: `# A Duration of some type
+scalar Duration
+
+# A DateTime of some type
+scalar DateTime`, BuiltIn: false},
+	{Name: "graph/schema/user.graphqls", Input: `# The Information available on users for all.
+type User {
+    id: ID!
+    name: String!
+    username: String!
+}
+
+# The Input for updateing a user.
+input UpdateUserInput {
+    name: String!
+    username: String!
+}
+
+# The Input for creating a new user.
+input CreateUserInput {
+    name: String!
+    username: String!
+    password: String!
+}`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -251,18 +848,288 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // region    ***************************** args.gotpl *****************************
 
-func (ec *executionContext) field_Mutation_createTodo_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_createSafetyCheck_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 types.NewTodo
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNNewTodo2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐNewTodo(ctx, tmp)
+	var arg0 types.SafetyCheckInput
+	if tmp, ok := rawArgs["check"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("check"))
+		arg0, err = ec.unmarshalNSafetyCheckInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSafetyCheckInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["input"] = arg0
+	args["check"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createSensor_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 types.SensorInput
+	if tmp, ok := rawArgs["sensor"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sensor"))
+		arg0, err = ec.unmarshalNSensorInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensorInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["sensor"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createSolenoid_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 types.SolenoidInput
+	if tmp, ok := rawArgs["solenoid"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("solenoid"))
+		arg0, err = ec.unmarshalNSolenoidInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSolenoidInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["solenoid"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createStage_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 types.StageInput
+	if tmp, ok := rawArgs["stage"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stage"))
+		arg0, err = ec.unmarshalNStageInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐStageInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["stage"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 types.CreateUserInput
+	if tmp, ok := rawArgs["user"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user"))
+		arg0, err = ec.unmarshalNCreateUserInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐCreateUserInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["user"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteSafetyCheck_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteSensor_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteSolenoid_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteStage_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setEngineState_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 types.EngineState
+	if tmp, ok := rawArgs["state"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("state"))
+		arg0, err = ec.unmarshalNEngineState2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐEngineState(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["state"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateSafetyCheck_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 types.SafetyCheckInput
+	if tmp, ok := rawArgs["sensor"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sensor"))
+		arg1, err = ec.unmarshalNSafetyCheckInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSafetyCheckInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["sensor"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateSensor_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 types.SensorInput
+	if tmp, ok := rawArgs["sensor"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sensor"))
+		arg1, err = ec.unmarshalNSensorInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensorInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["sensor"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateSolenoid_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 types.SolenoidInput
+	if tmp, ok := rawArgs["solenoid"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("solenoid"))
+		arg1, err = ec.unmarshalNSolenoidInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSolenoidInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["solenoid"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateStage_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 types.StageInput
+	if tmp, ok := rawArgs["stage"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("stage"))
+		arg1, err = ec.unmarshalNStageInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐStageInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["stage"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 types.UpdateUserInput
+	if tmp, ok := rawArgs["user"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user"))
+		arg1, err = ec.unmarshalNUpdateUserInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐUpdateUserInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["user"] = arg1
 	return args, nil
 }
 
@@ -319,7 +1186,147 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Engine_engineState(ctx context.Context, field graphql.CollectedField, obj *types.Engine) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Engine",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EngineState, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(types.EngineState)
+	fc.Result = res
+	return ec.marshalNEngineState2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐEngineState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Engine_isRPIO(ctx context.Context, field graphql.CollectedField, obj *types.Engine) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Engine",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsRpio, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Engine_testButtonHeld(ctx context.Context, field graphql.CollectedField, obj *types.Engine) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Engine",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TestButtonHeld, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Engine_lockoutEnabled(ctx context.Context, field graphql.CollectedField, obj *types.Engine) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Engine",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LockoutEnabled, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_setEngineState(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -336,7 +1343,7 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createTodo_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_setEngineState_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -344,7 +1351,7 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateTodo(rctx, args["input"].(types.NewTodo))
+		return ec.resolvers.Mutation().SetEngineState(rctx, args["state"].(types.EngineState))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -356,12 +1363,642 @@ func (ec *executionContext) _Mutation_createTodo(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*types.Todo)
+	res := resTmp.(*types.Engine)
 	fc.Result = res
-	return ec.marshalNTodo2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐTodo(ctx, field.Selections, res)
+	return ec.marshalNEngine2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐEngine(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateUser(rctx, args["user"].(types.CreateUserInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateUser(rctx, args["id"].(string), args["user"].(types.UpdateUserInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteUser(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createStage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createStage_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateStage(rctx, args["stage"].(types.StageInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.Stage)
+	fc.Result = res
+	return ec.marshalNStage2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐStage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateStage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateStage_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateStage(rctx, args["id"].(string), args["stage"].(types.StageInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.Stage)
+	fc.Result = res
+	return ec.marshalNStage2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐStage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteStage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteStage_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteStage(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.Stage)
+	fc.Result = res
+	return ec.marshalNStage2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐStage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createSolenoid(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createSolenoid_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateSolenoid(rctx, args["solenoid"].(types.SolenoidInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.Solenoid)
+	fc.Result = res
+	return ec.marshalNSolenoid2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSolenoid(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateSolenoid(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateSolenoid_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateSolenoid(rctx, args["id"].(string), args["solenoid"].(types.SolenoidInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.Solenoid)
+	fc.Result = res
+	return ec.marshalNSolenoid2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSolenoid(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteSolenoid(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteSolenoid_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteSolenoid(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.Solenoid)
+	fc.Result = res
+	return ec.marshalNSolenoid2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSolenoid(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createSensor(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createSensor_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateSensor(rctx, args["sensor"].(types.SensorInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.Sensor)
+	fc.Result = res
+	return ec.marshalNSensor2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateSensor(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateSensor_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateSensor(rctx, args["id"].(string), args["sensor"].(types.SensorInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.Sensor)
+	fc.Result = res
+	return ec.marshalNSensor2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteSensor(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteSensor_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteSensor(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.Sensor)
+	fc.Result = res
+	return ec.marshalNSensor2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensor(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createSafetyCheck(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createSafetyCheck_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateSafetyCheck(rctx, args["check"].(types.SafetyCheckInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.SafetyCheck)
+	fc.Result = res
+	return ec.marshalNSafetyCheck2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSafetyCheck(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateSafetyCheck(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateSafetyCheck_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateSafetyCheck(rctx, args["id"].(string), args["sensor"].(types.SafetyCheckInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.SafetyCheck)
+	fc.Result = res
+	return ec.marshalNSafetyCheck2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSafetyCheck(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_deleteSafetyCheck(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_deleteSafetyCheck_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().DeleteSafetyCheck(rctx, args["id"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.SafetyCheck)
+	fc.Result = res
+	return ec.marshalNSafetyCheck2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSafetyCheck(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_engine(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -379,7 +2016,7 @@ func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.Coll
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Todos(rctx)
+		return ec.resolvers.Query().Engine(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -391,9 +2028,184 @@ func (ec *executionContext) _Query_todos(ctx context.Context, field graphql.Coll
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*types.Todo)
+	res := resTmp.(*types.Engine)
 	fc.Result = res
-	return ec.marshalNTodo2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐTodoᚄ(ctx, field.Selections, res)
+	return ec.marshalNEngine2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐEngine(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_users(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Users(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*types.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_stages(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Stages(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*types.Stage)
+	fc.Result = res
+	return ec.marshalNStage2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐStageᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_solenoids(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Solenoids(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*types.Solenoid)
+	fc.Result = res
+	return ec.marshalNSolenoid2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSolenoidᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_sensors(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Sensors(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*types.Sensor)
+	fc.Result = res
+	return ec.marshalNSensor2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensorᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_safety_checks(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().SafetyChecks(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*types.SafetyCheck)
+	fc.Result = res
+	return ec.marshalNSafetyCheck2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSafetyCheckᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -467,7 +2279,7 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.CollectedField, obj *types.Todo) (ret graphql.Marshaler) {
+func (ec *executionContext) _SafetyCheck_id(ctx context.Context, field graphql.CollectedField, obj *types.SafetyCheck) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -475,17 +2287,17 @@ func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.Collecte
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Todo",
+		Object:     "SafetyCheck",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
+		IsMethod:   true,
+		IsResolver: true,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
+		return ec.resolvers.SafetyCheck().ID(rctx, obj)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -502,7 +2314,7 @@ func (ec *executionContext) _Todo_id(ctx context.Context, field graphql.Collecte
 	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.CollectedField, obj *types.Todo) (ret graphql.Marshaler) {
+func (ec *executionContext) _SafetyCheck_name(ctx context.Context, field graphql.CollectedField, obj *types.SafetyCheck) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -510,7 +2322,7 @@ func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.Collec
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Todo",
+		Object:     "SafetyCheck",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -520,7 +2332,7 @@ func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.Collec
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Text, nil
+		return obj.Name, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -537,7 +2349,7 @@ func (ec *executionContext) _Todo_text(ctx context.Context, field graphql.Collec
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.CollectedField, obj *types.Todo) (ret graphql.Marshaler) {
+func (ec *executionContext) _SafetyCheck_description(ctx context.Context, field graphql.CollectedField, obj *types.SafetyCheck) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -545,7 +2357,7 @@ func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.Collec
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Todo",
+		Object:     "SafetyCheck",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -555,7 +2367,7 @@ func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.Collec
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Done, nil
+		return obj.Description, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -567,12 +2379,12 @@ func (ec *executionContext) _Todo_done(ctx context.Context, field graphql.Collec
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.CollectedField, obj *types.Todo) (ret graphql.Marshaler) {
+func (ec *executionContext) _SafetyCheck_valid_state(ctx context.Context, field graphql.CollectedField, obj *types.SafetyCheck) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -580,7 +2392,7 @@ func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.Collec
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:     "Todo",
+		Object:     "SafetyCheck",
 		Field:      field,
 		Args:       nil,
 		IsMethod:   false,
@@ -590,7 +2402,7 @@ func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.Collec
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.User, nil
+		return obj.ValidState, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -602,9 +2414,604 @@ func (ec *executionContext) _Todo_user(ctx context.Context, field graphql.Collec
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*types.User)
+	res := resTmp.(types.EngineState)
 	fc.Result = res
-	return ec.marshalNUser2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐUser(ctx, field.Selections, res)
+	return ec.marshalNEngineState2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐEngineState(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SafetyCheck_code(ctx context.Context, field graphql.CollectedField, obj *types.SafetyCheck) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "SafetyCheck",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Code, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Sensor_id(ctx context.Context, field graphql.CollectedField, obj *types.Sensor) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Sensor",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Sensor().ID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Sensor_name(ctx context.Context, field graphql.CollectedField, obj *types.Sensor) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Sensor",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Sensor_description(ctx context.Context, field graphql.CollectedField, obj *types.Sensor) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Sensor",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Sensor_node_id(ctx context.Context, field graphql.CollectedField, obj *types.Sensor) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Sensor",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Sensor().NodeID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Sensor_sensor_id(ctx context.Context, field graphql.CollectedField, obj *types.Sensor) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Sensor",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Sensor().SensorID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Sensor_transform_code(ctx context.Context, field graphql.CollectedField, obj *types.Sensor) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Sensor",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TransformCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Solenoid_id(ctx context.Context, field graphql.CollectedField, obj *types.Solenoid) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Solenoid",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Solenoid().ID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Solenoid_name(ctx context.Context, field graphql.CollectedField, obj *types.Solenoid) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Solenoid",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Solenoid_description(ctx context.Context, field graphql.CollectedField, obj *types.Solenoid) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Solenoid",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Solenoid_can_id(ctx context.Context, field graphql.CollectedField, obj *types.Solenoid) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Solenoid",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Solenoid().CanID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Stage_id(ctx context.Context, field graphql.CollectedField, obj *types.Stage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Stage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Stage().ID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Stage_name(ctx context.Context, field graphql.CollectedField, obj *types.Stage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Stage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Stage_description(ctx context.Context, field graphql.CollectedField, obj *types.Stage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Stage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Stage_can_id(ctx context.Context, field graphql.CollectedField, obj *types.Stage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Stage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Stage().CanID(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Stage_pre_stage_code(ctx context.Context, field graphql.CollectedField, obj *types.Stage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Stage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PreStageCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Stage_duration(ctx context.Context, field graphql.CollectedField, obj *types.Stage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Stage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Stage().Duration(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNDuration2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *types.User) (ret graphql.Marshaler) {
@@ -661,6 +3068,41 @@ func (ec *executionContext) _User_name(ctx context.Context, field graphql.Collec
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _User_username(ctx context.Context, field graphql.CollectedField, obj *types.User) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Username, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1799,8 +4241,8 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputNewTodo(ctx context.Context, obj interface{}) (types.NewTodo, error) {
-	var it types.NewTodo
+func (ec *executionContext) unmarshalInputCreateUserInput(ctx context.Context, obj interface{}) (types.CreateUserInput, error) {
+	var it types.CreateUserInput
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
 		asMap[k] = v
@@ -1808,19 +4250,254 @@ func (ec *executionContext) unmarshalInputNewTodo(ctx context.Context, obj inter
 
 	for k, v := range asMap {
 		switch k {
-		case "text":
+		case "name":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("text"))
-			it.Text, err = ec.unmarshalNString2string(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-		case "userId":
+		case "username":
 			var err error
 
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userId"))
-			it.UserID, err = ec.unmarshalNString2string(ctx, v)
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			it.Username, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "password":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			it.Password, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSafetyCheckInput(ctx context.Context, obj interface{}) (types.SafetyCheckInput, error) {
+	var it types.SafetyCheckInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "valid_state":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("valid_state"))
+			it.ValidState, err = ec.unmarshalNEngineState2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐEngineState(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "code":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("code"))
+			it.Code, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSensorInput(ctx context.Context, obj interface{}) (types.SensorInput, error) {
+	var it types.SensorInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "node_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("node_id"))
+			it.NodeID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "sensor_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sensor_id"))
+			it.SensorID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "transform_code":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("transform_code"))
+			it.TransformCode, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSolenoidInput(ctx context.Context, obj interface{}) (types.SolenoidInput, error) {
+	var it types.SolenoidInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "can_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("can_id"))
+			it.CanID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputStageInput(ctx context.Context, obj interface{}) (types.StageInput, error) {
+	var it types.StageInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "can_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("can_id"))
+			it.CanID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "pre_stage_code":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pre_stage_code"))
+			it.PreStageCode, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "duration":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("duration"))
+			it.Duration, err = ec.unmarshalNDuration2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateUserInput(ctx context.Context, obj interface{}) (types.UpdateUserInput, error) {
+	var it types.UpdateUserInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "username":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			it.Username, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -1838,6 +4515,48 @@ func (ec *executionContext) unmarshalInputNewTodo(ctx context.Context, obj inter
 
 // region    **************************** object.gotpl ****************************
 
+var engineImplementors = []string{"Engine"}
+
+func (ec *executionContext) _Engine(ctx context.Context, sel ast.SelectionSet, obj *types.Engine) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, engineImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Engine")
+		case "engineState":
+			out.Values[i] = ec._Engine_engineState(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "isRPIO":
+			out.Values[i] = ec._Engine_isRPIO(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "testButtonHeld":
+			out.Values[i] = ec._Engine_testButtonHeld(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "lockoutEnabled":
+			out.Values[i] = ec._Engine_lockoutEnabled(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -1853,8 +4572,83 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Mutation")
-		case "createTodo":
-			out.Values[i] = ec._Mutation_createTodo(ctx, field)
+		case "setEngineState":
+			out.Values[i] = ec._Mutation_setEngineState(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createUser":
+			out.Values[i] = ec._Mutation_createUser(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateUser":
+			out.Values[i] = ec._Mutation_updateUser(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteUser":
+			out.Values[i] = ec._Mutation_deleteUser(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createStage":
+			out.Values[i] = ec._Mutation_createStage(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateStage":
+			out.Values[i] = ec._Mutation_updateStage(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteStage":
+			out.Values[i] = ec._Mutation_deleteStage(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createSolenoid":
+			out.Values[i] = ec._Mutation_createSolenoid(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateSolenoid":
+			out.Values[i] = ec._Mutation_updateSolenoid(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteSolenoid":
+			out.Values[i] = ec._Mutation_deleteSolenoid(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createSensor":
+			out.Values[i] = ec._Mutation_createSensor(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateSensor":
+			out.Values[i] = ec._Mutation_updateSensor(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteSensor":
+			out.Values[i] = ec._Mutation_deleteSensor(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createSafetyCheck":
+			out.Values[i] = ec._Mutation_createSafetyCheck(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateSafetyCheck":
+			out.Values[i] = ec._Mutation_updateSafetyCheck(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "deleteSafetyCheck":
+			out.Values[i] = ec._Mutation_deleteSafetyCheck(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -1884,7 +4678,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "todos":
+		case "engine":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -1892,7 +4686,77 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_todos(ctx, field)
+				res = ec._Query_engine(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "users":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_users(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "stages":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_stages(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "solenoids":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_solenoids(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "sensors":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_sensors(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "safety_checks":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_safety_checks(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -1913,37 +4777,269 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 	return out
 }
 
-var todoImplementors = []string{"Todo"}
+var safetyCheckImplementors = []string{"SafetyCheck"}
 
-func (ec *executionContext) _Todo(ctx context.Context, sel ast.SelectionSet, obj *types.Todo) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, todoImplementors)
+func (ec *executionContext) _SafetyCheck(ctx context.Context, sel ast.SelectionSet, obj *types.SafetyCheck) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, safetyCheckImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("Todo")
+			out.Values[i] = graphql.MarshalString("SafetyCheck")
 		case "id":
-			out.Values[i] = ec._Todo_id(ctx, field, obj)
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._SafetyCheck_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "name":
+			out.Values[i] = ec._SafetyCheck_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
-		case "text":
-			out.Values[i] = ec._Todo_text(ctx, field, obj)
+		case "description":
+			out.Values[i] = ec._SafetyCheck_description(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
-		case "done":
-			out.Values[i] = ec._Todo_done(ctx, field, obj)
+		case "valid_state":
+			out.Values[i] = ec._SafetyCheck_valid_state(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
-		case "user":
-			out.Values[i] = ec._Todo_user(ctx, field, obj)
+		case "code":
+			out.Values[i] = ec._SafetyCheck_code(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				invalids++
+				atomic.AddUint32(&invalids, 1)
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var sensorImplementors = []string{"Sensor"}
+
+func (ec *executionContext) _Sensor(ctx context.Context, sel ast.SelectionSet, obj *types.Sensor) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, sensorImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Sensor")
+		case "id":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Sensor_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "name":
+			out.Values[i] = ec._Sensor_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._Sensor_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "node_id":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Sensor_node_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "sensor_id":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Sensor_sensor_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "transform_code":
+			out.Values[i] = ec._Sensor_transform_code(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var solenoidImplementors = []string{"Solenoid"}
+
+func (ec *executionContext) _Solenoid(ctx context.Context, sel ast.SelectionSet, obj *types.Solenoid) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, solenoidImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Solenoid")
+		case "id":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Solenoid_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "name":
+			out.Values[i] = ec._Solenoid_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._Solenoid_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "can_id":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Solenoid_can_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var stageImplementors = []string{"Stage"}
+
+func (ec *executionContext) _Stage(ctx context.Context, sel ast.SelectionSet, obj *types.Stage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, stageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Stage")
+		case "id":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Stage_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "name":
+			out.Values[i] = ec._Stage_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "description":
+			out.Values[i] = ec._Stage_description(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "can_id":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Stage_can_id(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "pre_stage_code":
+			out.Values[i] = ec._Stage_pre_stage_code(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "duration":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Stage_duration(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -1982,6 +5078,11 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			})
 		case "name":
 			out.Values[i] = ec._User_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "username":
+			out.Values[i] = ec._User_username(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				atomic.AddUint32(&invalids, 1)
 			}
@@ -2261,6 +5362,50 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNCreateUserInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐCreateUserInput(ctx context.Context, v interface{}) (types.CreateUserInput, error) {
+	res, err := ec.unmarshalInputCreateUserInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNDuration2string(ctx context.Context, v interface{}) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNDuration2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNEngine2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐEngine(ctx context.Context, sel ast.SelectionSet, v types.Engine) graphql.Marshaler {
+	return ec._Engine(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNEngine2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐEngine(ctx context.Context, sel ast.SelectionSet, v *types.Engine) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Engine(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNEngineState2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐEngineState(ctx context.Context, v interface{}) (types.EngineState, error) {
+	var res types.EngineState
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNEngineState2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐEngineState(ctx context.Context, sel ast.SelectionSet, v types.EngineState) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -2276,18 +5421,13 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) unmarshalNNewTodo2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐNewTodo(ctx context.Context, v interface{}) (types.NewTodo, error) {
-	res, err := ec.unmarshalInputNewTodo(ctx, v)
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
-	res, err := graphql.UnmarshalString(v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalString(v)
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -2296,11 +5436,11 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
-func (ec *executionContext) marshalNTodo2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐTodo(ctx context.Context, sel ast.SelectionSet, v types.Todo) graphql.Marshaler {
-	return ec._Todo(ctx, sel, &v)
+func (ec *executionContext) marshalNSafetyCheck2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSafetyCheck(ctx context.Context, sel ast.SelectionSet, v types.SafetyCheck) graphql.Marshaler {
+	return ec._SafetyCheck(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalNTodo2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐTodoᚄ(ctx context.Context, sel ast.SelectionSet, v []*types.Todo) graphql.Marshaler {
+func (ec *executionContext) marshalNSafetyCheck2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSafetyCheckᚄ(ctx context.Context, sel ast.SelectionSet, v []*types.SafetyCheck) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -2324,7 +5464,7 @@ func (ec *executionContext) marshalNTodo2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsio
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNTodo2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐTodo(ctx, sel, v[i])
+			ret[i] = ec.marshalNSafetyCheck2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSafetyCheck(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -2344,14 +5484,276 @@ func (ec *executionContext) marshalNTodo2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsio
 	return ret
 }
 
-func (ec *executionContext) marshalNTodo2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐTodo(ctx context.Context, sel ast.SelectionSet, v *types.Todo) graphql.Marshaler {
+func (ec *executionContext) marshalNSafetyCheck2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSafetyCheck(ctx context.Context, sel ast.SelectionSet, v *types.SafetyCheck) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
-	return ec._Todo(ctx, sel, v)
+	return ec._SafetyCheck(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSafetyCheckInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSafetyCheckInput(ctx context.Context, v interface{}) (types.SafetyCheckInput, error) {
+	res, err := ec.unmarshalInputSafetyCheckInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSensor2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensor(ctx context.Context, sel ast.SelectionSet, v types.Sensor) graphql.Marshaler {
+	return ec._Sensor(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSensor2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensorᚄ(ctx context.Context, sel ast.SelectionSet, v []*types.Sensor) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSensor2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensor(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSensor2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensor(ctx context.Context, sel ast.SelectionSet, v *types.Sensor) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Sensor(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSensorInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensorInput(ctx context.Context, v interface{}) (types.SensorInput, error) {
+	res, err := ec.unmarshalInputSensorInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSolenoid2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSolenoid(ctx context.Context, sel ast.SelectionSet, v types.Solenoid) graphql.Marshaler {
+	return ec._Solenoid(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSolenoid2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSolenoidᚄ(ctx context.Context, sel ast.SelectionSet, v []*types.Solenoid) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNSolenoid2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSolenoid(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNSolenoid2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSolenoid(ctx context.Context, sel ast.SelectionSet, v *types.Solenoid) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Solenoid(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNSolenoidInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSolenoidInput(ctx context.Context, v interface{}) (types.SolenoidInput, error) {
+	res, err := ec.unmarshalInputSolenoidInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNStage2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐStage(ctx context.Context, sel ast.SelectionSet, v types.Stage) graphql.Marshaler {
+	return ec._Stage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNStage2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐStageᚄ(ctx context.Context, sel ast.SelectionSet, v []*types.Stage) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNStage2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐStage(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNStage2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐStage(ctx context.Context, sel ast.SelectionSet, v *types.Stage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Stage(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNStageInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐStageInput(ctx context.Context, v interface{}) (types.StageInput, error) {
+	res, err := ec.unmarshalInputStageInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
+	res, err := graphql.UnmarshalString(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
+	res := graphql.MarshalString(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNUpdateUserInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐUpdateUserInput(ctx context.Context, v interface{}) (types.UpdateUserInput, error) {
+	res, err := ec.unmarshalInputUpdateUserInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNUser2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐUser(ctx context.Context, sel ast.SelectionSet, v types.User) graphql.Marshaler {
+	return ec._User(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUser2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []*types.User) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNUser2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐUser(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) marshalNUser2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐUser(ctx context.Context, sel ast.SelectionSet, v *types.User) graphql.Marshaler {

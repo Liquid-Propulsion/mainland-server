@@ -1,0 +1,14 @@
+type SafetyCheck {
+    id: ID!
+    name: String!
+    description: String!
+    valid_state: EngineState!
+    code: String!
+}
+
+input SafetyCheckInput {
+    name: String!
+    description: String!
+    valid_state: EngineState!
+    code: String!
+}
