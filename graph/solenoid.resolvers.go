@@ -11,7 +11,7 @@ import (
 )
 
 func (r *solenoidResolver) ID(ctx context.Context, obj *types.Solenoid) (string, error) {
-	return EncodeID("solenoid", *obj.ID), nil
+	return EncodeID("solenoid", obj.Model.ID), nil
 }
 
 func (r *solenoidResolver) CanID(ctx context.Context, obj *types.Solenoid) (int, error) {

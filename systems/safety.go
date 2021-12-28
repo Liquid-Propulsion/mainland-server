@@ -27,7 +27,10 @@ func (safety *SafetySystem) Reset() {
 func (safety *SafetySystem) Tick(state types.EngineState, sensors *SensorsSystem) {
 	for _, check := range safety.safetyChecks {
 		if state == check.ValidState || check.ValidState == types.ALL {
-			safety.RunCheck(check, sensors)
+			err := safety.RunCheck(check, sensors)
+			if err != nil {
+				log.Println(err.Error())
+			}
 		}
 	}
 }

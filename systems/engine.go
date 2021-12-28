@@ -43,9 +43,8 @@ func Init() {
 }
 
 func (engine *Engine) start() {
-	engine.StagingSystem.Reset()
-	engine.SafetySystem.Reset()
-	engine.TestSystem.Reset()
+	engine.Reset()
+	go engine.SensorsSystem.Run()
 	go engine.LockoutSystem.Run()
 	go engine.tickLoop()
 }
@@ -116,6 +115,13 @@ func (engine *Engine) TestButtonHeld() bool {
 
 func (engine *Engine) HasRPIO() bool {
 	return engine.TestButton.HasRPIO()
+}
+
+func (engine *Engine) Reset() {
+	engine.StagingSystem.Reset()
+	engine.SafetySystem.Reset()
+	engine.TestSystem.Reset()
+	engine.SensorsSystem.Reset()
 }
 
 func (engine *Engine) SetState(state types.EngineState) error {

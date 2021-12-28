@@ -11,12 +11,17 @@ type Query {
   sensors: [Sensor!]!
   # Returns all safety checks
   safety_checks: [SafetyCheck!]!
+
+  # -----------------SENSOR DATA-----------------
+  latestSensorData(queries: [SensorQuery!]!): [Float!]!
 }
 
 type Mutation {
   # -----------------ENGINE-----------------
   # Set the current engine's state.
   setEngineState(state: EngineState!): Engine!
+  # Resets all engine systems.
+  resetEngine: Engine!
 
   # -----------------USER-----------------
   # Create a new user.
@@ -54,7 +59,7 @@ type Mutation {
   # Create a new safety check.
   createSafetyCheck(check: SafetyCheckInput!): SafetyCheck!
   # Update a sensor.
-  updateSafetyCheck(id: ID!, sensor: SafetyCheckInput!): SafetyCheck!
+  updateSafetyCheck(id: ID!, check: SafetyCheckInput!): SafetyCheck!
   # Delete a sensor.
   deleteSafetyCheck(id: ID!): SafetyCheck!
 }

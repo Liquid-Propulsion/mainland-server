@@ -2,11 +2,14 @@ package mock
 
 import (
 	"log"
+	"math"
+	"time"
 
 	canpackets "github.com/Liquid-Propulsion/canpackets/go"
 )
 
 var fakeNodeIDs = []uint8{0, 1, 2, 3}
+var fakeSensorIDs = []uint8{0, 1, 2}
 
 type MockCANBackend struct {
 	sensorDataChannel chan canpackets.SensorDataPacket
@@ -17,6 +20,21 @@ func New() *MockCANBackend {
 	backend := new(MockCANBackend)
 	backend.sensorDataChannel = make(chan canpackets.SensorDataPacket)
 	backend.pongChannel = make(chan canpackets.PongPacket)
+	go func() {
+		for {
+			for _, nodeID := range fakeNodeIDs {
+				for _, sensorID := range fakeSensorIDs {
+					backend.sensorDataChannel <- canpackets.SensorDataPacket{
+						NodeId:     canpackets.ID(nodeID),
+						SensorId:   sensorID,
+						SensorType: canpackets.PRESSURE_TRANSDUCER,
+						SensorData: uint32(math.Abs(10000 + (math.Sin(float64(time.Now().UnixMilli())/10000.0) * 1000))),
+					}
+				}
+			}
+			time.Sleep(time.Millisecond * 20)
+		}
+	}()
 	return backend
 }
 

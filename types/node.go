@@ -4,10 +4,9 @@ import (
 	"gorm.io/gorm"
 )
 
-type SafetyCheck struct {
+type Node struct {
 	gorm.Model
 	Name        string
 	Description string
-	ValidState  EngineState
-	Code        string
+	NodeID      uint8
 }

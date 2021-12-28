@@ -8,10 +8,9 @@ import (
 
 type Stage struct {
 	gorm.Model
-	ID           *uint
 	Name         string
 	Description  string
-	CANID        uint8
+	CANID        uint8 `gorm:"column:can_"`
 	PreStageCode string
 	Duration     time.Duration
 }

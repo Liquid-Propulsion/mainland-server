@@ -66,8 +66,9 @@ type ComplexityRoot struct {
 		DeleteSolenoid    func(childComplexity int, id string) int
 		DeleteStage       func(childComplexity int, id string) int
 		DeleteUser        func(childComplexity int, id string) int
+		ResetEngine       func(childComplexity int) int
 		SetEngineState    func(childComplexity int, state types.EngineState) int
-		UpdateSafetyCheck func(childComplexity int, id string, sensor types.SafetyCheckInput) int
+		UpdateSafetyCheck func(childComplexity int, id string, check types.SafetyCheckInput) int
 		UpdateSensor      func(childComplexity int, id string, sensor types.SensorInput) int
 		UpdateSolenoid    func(childComplexity int, id string, solenoid types.SolenoidInput) int
 		UpdateStage       func(childComplexity int, id string, stage types.StageInput) int
@@ -75,12 +76,13 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Engine       func(childComplexity int) int
-		SafetyChecks func(childComplexity int) int
-		Sensors      func(childComplexity int) int
-		Solenoids    func(childComplexity int) int
-		Stages       func(childComplexity int) int
-		Users        func(childComplexity int) int
+		Engine           func(childComplexity int) int
+		LatestSensorData func(childComplexity int, queries []*types.SensorQuery) int
+		SafetyChecks     func(childComplexity int) int
+		Sensors          func(childComplexity int) int
+		Solenoids        func(childComplexity int) int
+		Stages           func(childComplexity int) int
+		Users            func(childComplexity int) int
 	}
 
 	SafetyCheck struct {
@@ -125,6 +127,7 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	SetEngineState(ctx context.Context, state types.EngineState) (*types.Engine, error)
+	ResetEngine(ctx context.Context) (*types.Engine, error)
 	CreateUser(ctx context.Context, user types.CreateUserInput) (*types.User, error)
 	UpdateUser(ctx context.Context, id string, user types.UpdateUserInput) (*types.User, error)
 	DeleteUser(ctx context.Context, id string) (*types.User, error)
@@ -138,7 +141,7 @@ type MutationResolver interface {
 	UpdateSensor(ctx context.Context, id string, sensor types.SensorInput) (*types.Sensor, error)
 	DeleteSensor(ctx context.Context, id string) (*types.Sensor, error)
 	CreateSafetyCheck(ctx context.Context, check types.SafetyCheckInput) (*types.SafetyCheck, error)
-	UpdateSafetyCheck(ctx context.Context, id string, sensor types.SafetyCheckInput) (*types.SafetyCheck, error)
+	UpdateSafetyCheck(ctx context.Context, id string, check types.SafetyCheckInput) (*types.SafetyCheck, error)
 	DeleteSafetyCheck(ctx context.Context, id string) (*types.SafetyCheck, error)
 }
 type QueryResolver interface {
@@ -148,6 +151,7 @@ type QueryResolver interface {
 	Solenoids(ctx context.Context) ([]*types.Solenoid, error)
 	Sensors(ctx context.Context) ([]*types.Sensor, error)
 	SafetyChecks(ctx context.Context) ([]*types.SafetyCheck, error)
+	LatestSensorData(ctx context.Context, queries []*types.SensorQuery) ([]float64, error)
 }
 type SafetyCheckResolver interface {
 	ID(ctx context.Context, obj *types.SafetyCheck) (string, error)
@@ -337,6 +341,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteUser(childComplexity, args["id"].(string)), true
 
+	case "Mutation.resetEngine":
+		if e.complexity.Mutation.ResetEngine == nil {
+			break
+		}
+
+		return e.complexity.Mutation.ResetEngine(childComplexity), true
+
 	case "Mutation.setEngineState":
 		if e.complexity.Mutation.SetEngineState == nil {
 			break
@@ -359,7 +370,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateSafetyCheck(childComplexity, args["id"].(string), args["sensor"].(types.SafetyCheckInput)), true
+		return e.complexity.Mutation.UpdateSafetyCheck(childComplexity, args["id"].(string), args["check"].(types.SafetyCheckInput)), true
 
 	case "Mutation.updateSensor":
 		if e.complexity.Mutation.UpdateSensor == nil {
@@ -415,6 +426,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Engine(childComplexity), true
+
+	case "Query.latestSensorData":
+		if e.complexity.Query.LatestSensorData == nil {
+			break
+		}
+
+		args, err := ec.field_Query_latestSensorData_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.LatestSensorData(childComplexity, args["queries"].([]*types.SensorQuery)), true
 
 	case "Query.safety_checks":
 		if e.complexity.Query.SafetyChecks == nil {
@@ -725,12 +748,17 @@ input SafetyCheckInput {
   sensors: [Sensor!]!
   # Returns all safety checks
   safety_checks: [SafetyCheck!]!
+
+  # -----------------SENSOR DATA-----------------
+  latestSensorData(queries: [SensorQuery!]!): [Float!]!
 }
 
 type Mutation {
   # -----------------ENGINE-----------------
   # Set the current engine's state.
   setEngineState(state: EngineState!): Engine!
+  # Resets all engine systems.
+  resetEngine: Engine!
 
   # -----------------USER-----------------
   # Create a new user.
@@ -768,7 +796,7 @@ type Mutation {
   # Create a new safety check.
   createSafetyCheck(check: SafetyCheckInput!): SafetyCheck!
   # Update a sensor.
-  updateSafetyCheck(id: ID!, sensor: SafetyCheckInput!): SafetyCheck!
+  updateSafetyCheck(id: ID!, check: SafetyCheckInput!): SafetyCheck!
   # Delete a sensor.
   deleteSafetyCheck(id: ID!): SafetyCheck!
 }
@@ -788,6 +816,12 @@ input SensorInput {
     node_id: Int!
     sensor_id: Int!
     transform_code: String!
+}
+
+input SensorQuery {
+    raw: Boolean!
+    node_id: Int!
+    sensor_id: Int!
 }`, BuiltIn: false},
 	{Name: "graph/schema/solenoid.graphqls", Input: `type Solenoid {
     id: ID!
@@ -1026,14 +1060,14 @@ func (ec *executionContext) field_Mutation_updateSafetyCheck_args(ctx context.Co
 	}
 	args["id"] = arg0
 	var arg1 types.SafetyCheckInput
-	if tmp, ok := rawArgs["sensor"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sensor"))
+	if tmp, ok := rawArgs["check"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("check"))
 		arg1, err = ec.unmarshalNSafetyCheckInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSafetyCheckInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["sensor"] = arg1
+	args["check"] = arg1
 	return args, nil
 }
 
@@ -1145,6 +1179,21 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_latestSensorData_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 []*types.SensorQuery
+	if tmp, ok := rawArgs["queries"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("queries"))
+		arg0, err = ec.unmarshalNSensorQuery2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensorQueryᚄ(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["queries"] = arg0
 	return args, nil
 }
 
@@ -1352,6 +1401,41 @@ func (ec *executionContext) _Mutation_setEngineState(ctx context.Context, field 
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().SetEngineState(rctx, args["state"].(types.EngineState))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*types.Engine)
+	fc.Result = res
+	return ec.marshalNEngine2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐEngine(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_resetEngine(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().ResetEngine(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1939,7 +2023,7 @@ func (ec *executionContext) _Mutation_updateSafetyCheck(ctx context.Context, fie
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateSafetyCheck(rctx, args["id"].(string), args["sensor"].(types.SafetyCheckInput))
+		return ec.resolvers.Mutation().UpdateSafetyCheck(rctx, args["id"].(string), args["check"].(types.SafetyCheckInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2206,6 +2290,48 @@ func (ec *executionContext) _Query_safety_checks(ctx context.Context, field grap
 	res := resTmp.([]*types.SafetyCheck)
 	fc.Result = res
 	return ec.marshalNSafetyCheck2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSafetyCheckᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_latestSensorData(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_latestSensorData_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().LatestSensorData(rctx, args["queries"].([]*types.SensorQuery))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]float64)
+	fc.Result = res
+	return ec.marshalNFloat2ᚕfloat64ᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4382,6 +4508,45 @@ func (ec *executionContext) unmarshalInputSensorInput(ctx context.Context, obj i
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputSensorQuery(ctx context.Context, obj interface{}) (types.SensorQuery, error) {
+	var it types.SensorQuery
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "raw":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("raw"))
+			it.Raw, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "node_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("node_id"))
+			it.NodeID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "sensor_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("sensor_id"))
+			it.SensorID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSolenoidInput(ctx context.Context, obj interface{}) (types.SolenoidInput, error) {
 	var it types.SolenoidInput
 	asMap := map[string]interface{}{}
@@ -4577,6 +4742,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "resetEngine":
+			out.Values[i] = ec._Mutation_resetEngine(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createUser":
 			out.Values[i] = ec._Mutation_createUser(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -4757,6 +4927,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_safety_checks(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "latestSensorData":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_latestSensorData(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -5406,6 +5590,57 @@ func (ec *executionContext) marshalNEngineState2githubᚗcomᚋLiquidᚑPropulsi
 	return v
 }
 
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
+	res, err := graphql.UnmarshalFloat(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	res := graphql.MarshalFloat(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNFloat2ᚕfloat64ᚄ(ctx context.Context, v interface{}) ([]float64, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]float64, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNFloat2float64(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNFloat2ᚕfloat64ᚄ(ctx context.Context, sel ast.SelectionSet, v []float64) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNFloat2float64(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalID(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -5560,6 +5795,32 @@ func (ec *executionContext) marshalNSensor2ᚖgithubᚗcomᚋLiquidᚑPropulsion
 func (ec *executionContext) unmarshalNSensorInput2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensorInput(ctx context.Context, v interface{}) (types.SensorInput, error) {
 	res, err := ec.unmarshalInputSensorInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNSensorQuery2ᚕᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensorQueryᚄ(ctx context.Context, v interface{}) ([]*types.SensorQuery, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]*types.SensorQuery, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNSensorQuery2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensorQuery(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalNSensorQuery2ᚖgithubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSensorQuery(ctx context.Context, v interface{}) (*types.SensorQuery, error) {
+	res, err := ec.unmarshalInputSensorQuery(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNSolenoid2githubᚗcomᚋLiquidᚑPropulsionᚋmainlandᚑserverᚋtypesᚐSolenoid(ctx context.Context, sel ast.SelectionSet, v types.Solenoid) graphql.Marshaler {

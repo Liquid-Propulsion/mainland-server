@@ -11,12 +11,19 @@ import (
 	"github.com/Liquid-Propulsion/mainland-server/graph/generated"
 	"github.com/Liquid-Propulsion/mainland-server/systems"
 	"github.com/Liquid-Propulsion/mainland-server/types"
+	"gorm.io/gorm"
 )
 
 func (r *mutationResolver) SetEngineState(ctx context.Context, state types.EngineState) (*types.Engine, error) {
 	err := systems.CurrentEngine.SetState(state)
 	info := systems.CurrentEngine.EngineInfo()
 	return &info, err
+}
+
+func (r *mutationResolver) ResetEngine(ctx context.Context) (*types.Engine, error) {
+	systems.CurrentEngine.Reset()
+	info := systems.CurrentEngine.EngineInfo()
+	return &info, nil
 }
 
 func (r *mutationResolver) CreateUser(ctx context.Context, user types.CreateUserInput) (*types.User, error) {
@@ -42,7 +49,9 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id string, user types
 		return nil, err
 	}
 	userOut := types.User{
-		ID: &idInt,
+		Model: gorm.Model{
+			ID: idInt,
+		},
 	}
 	tx := sql.Database.Where(&userOut).Take(&userOut)
 	if tx.Error != nil {
@@ -63,7 +72,9 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id string) (*types.Us
 		return nil, err
 	}
 	user := types.User{
-		ID: &idInt,
+		Model: gorm.Model{
+			ID: idInt,
+		},
 	}
 	tx := sql.Database.Delete(&user)
 	if tx.Error != nil {
@@ -88,6 +99,7 @@ func (r *mutationResolver) CreateStage(ctx context.Context, stage types.StageInp
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	systems.CurrentEngine.StagingSystem.Reset()
 	return &stageType, nil
 }
 
@@ -97,7 +109,9 @@ func (r *mutationResolver) UpdateStage(ctx context.Context, id string, stage typ
 		return nil, err
 	}
 	stageOut := types.Stage{
-		ID: &idInt,
+		Model: gorm.Model{
+			ID: idInt,
+		},
 	}
 	tx := sql.Database.Where(&stageOut).Take(&stageOut)
 	if tx.Error != nil {
@@ -116,6 +130,7 @@ func (r *mutationResolver) UpdateStage(ctx context.Context, id string, stage typ
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	systems.CurrentEngine.StagingSystem.Reset()
 	return &stageOut, nil
 }
 
@@ -125,12 +140,15 @@ func (r *mutationResolver) DeleteStage(ctx context.Context, id string) (*types.S
 		return nil, err
 	}
 	stage := types.Stage{
-		ID: &idInt,
+		Model: gorm.Model{
+			ID: idInt,
+		},
 	}
 	tx := sql.Database.Delete(&stage)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	systems.CurrentEngine.StagingSystem.Reset()
 	return &stage, nil
 }
 
@@ -144,6 +162,7 @@ func (r *mutationResolver) CreateSolenoid(ctx context.Context, solenoid types.So
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	systems.CurrentEngine.TestSystem.Reset()
 	return &solenoidType, nil
 }
 
@@ -153,7 +172,9 @@ func (r *mutationResolver) UpdateSolenoid(ctx context.Context, id string, soleno
 		return nil, err
 	}
 	solenoidOut := types.Solenoid{
-		ID: &idInt,
+		Model: gorm.Model{
+			ID: idInt,
+		},
 	}
 	tx := sql.Database.Where(&solenoidOut).Take(&solenoidOut)
 	if tx.Error != nil {
@@ -166,6 +187,7 @@ func (r *mutationResolver) UpdateSolenoid(ctx context.Context, id string, soleno
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	systems.CurrentEngine.TestSystem.Reset()
 	return &solenoidOut, nil
 }
 
@@ -175,12 +197,15 @@ func (r *mutationResolver) DeleteSolenoid(ctx context.Context, id string) (*type
 		return nil, err
 	}
 	solenoid := types.Solenoid{
-		ID: &idInt,
+		Model: gorm.Model{
+			ID: idInt,
+		},
 	}
 	tx := sql.Database.Delete(&solenoid)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	systems.CurrentEngine.TestSystem.Reset()
 	return &solenoid, nil
 }
 
@@ -196,6 +221,7 @@ func (r *mutationResolver) CreateSensor(ctx context.Context, sensor types.Sensor
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	systems.CurrentEngine.SensorsSystem.Reset()
 	return &sensorType, nil
 }
 
@@ -205,7 +231,9 @@ func (r *mutationResolver) UpdateSensor(ctx context.Context, id string, sensor t
 		return nil, err
 	}
 	sensorOut := types.Sensor{
-		ID: &idInt,
+		Model: gorm.Model{
+			ID: idInt,
+		},
 	}
 	tx := sql.Database.Where(&sensorOut).Take(&sensorOut)
 	if tx.Error != nil {
@@ -220,6 +248,7 @@ func (r *mutationResolver) UpdateSensor(ctx context.Context, id string, sensor t
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	systems.CurrentEngine.SensorsSystem.Reset()
 	return &sensorOut, nil
 }
 
@@ -229,12 +258,15 @@ func (r *mutationResolver) DeleteSensor(ctx context.Context, id string) (*types.
 		return nil, err
 	}
 	sensor := types.Sensor{
-		ID: &idInt,
+		Model: gorm.Model{
+			ID: idInt,
+		},
 	}
 	tx := sql.Database.Delete(&sensor)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	systems.CurrentEngine.SensorsSystem.Reset()
 	return &sensor, nil
 }
 
@@ -249,6 +281,7 @@ func (r *mutationResolver) CreateSafetyCheck(ctx context.Context, check types.Sa
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	systems.CurrentEngine.SafetySystem.Reset()
 	return &safetyType, nil
 }
 
@@ -258,7 +291,9 @@ func (r *mutationResolver) UpdateSafetyCheck(ctx context.Context, id string, che
 		return nil, err
 	}
 	checkOut := types.SafetyCheck{
-		ID: &idInt,
+		Model: gorm.Model{
+			ID: idInt,
+		},
 	}
 	tx := sql.Database.Where(&checkOut).Take(&checkOut)
 	if tx.Error != nil {
@@ -272,6 +307,7 @@ func (r *mutationResolver) UpdateSafetyCheck(ctx context.Context, id string, che
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	systems.CurrentEngine.SafetySystem.Reset()
 	return &checkOut, nil
 }
 
@@ -281,12 +317,15 @@ func (r *mutationResolver) DeleteSafetyCheck(ctx context.Context, id string) (*t
 		return nil, err
 	}
 	safety := types.SafetyCheck{
-		ID: &idInt,
+		Model: gorm.Model{
+			ID: idInt,
+		},
 	}
 	tx := sql.Database.Delete(&safety)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	systems.CurrentEngine.SafetySystem.Reset()
 	return &safety, nil
 }
 
@@ -338,6 +377,21 @@ func (r *queryResolver) SafetyChecks(ctx context.Context) ([]*types.SafetyCheck,
 		return safetyChecks, out.Error
 	}
 	return safetyChecks, nil
+}
+
+func (r *queryResolver) LatestSensorData(ctx context.Context, queries []*types.SensorQuery) ([]float64, error) {
+	sensorData := make([]float64, len(queries))
+	for i, query := range queries {
+		data, err := systems.CurrentEngine.SensorsSystem.GetLatestSensorData(uint8(query.NodeID), uint8(query.SensorID))
+		if err != nil {
+			return sensorData, err
+		}
+		sensorData[i] = float64(data.SensorData)
+		if query.Raw {
+			sensorData[i] = float64(data.SensorDataRaw)
+		}
+	}
+	return sensorData, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

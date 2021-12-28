@@ -6,7 +6,6 @@ import (
 
 type User struct {
 	gorm.Model
-	ID           *uint
 	Name         string
 	Username     string
 	PasswordHash []byte

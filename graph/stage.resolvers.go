@@ -11,7 +11,7 @@ import (
 )
 
 func (r *stageResolver) ID(ctx context.Context, obj *types.Stage) (string, error) {
-	return EncodeID("stage", *obj.ID), nil
+	return EncodeID("stage", obj.Model.ID), nil
 }
 
 func (r *stageResolver) CanID(ctx context.Context, obj *types.Stage) (int, error) {

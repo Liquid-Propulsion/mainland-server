@@ -11,7 +11,7 @@ import (
 )
 
 func (r *safetyCheckResolver) ID(ctx context.Context, obj *types.SafetyCheck) (string, error) {
-	return EncodeID("safety_check", *obj.ID), nil
+	return EncodeID("safety_check", obj.Model.ID), nil
 }
 
 // SafetyCheck returns generated.SafetyCheckResolver implementation.

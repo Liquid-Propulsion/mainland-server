@@ -11,7 +11,7 @@ import (
 )
 
 func (r *userResolver) ID(ctx context.Context, obj *types.User) (string, error) {
-	return EncodeID("user", *obj.ID), nil
+	return EncodeID("user", obj.Model.ID), nil
 }
 
 // User returns generated.UserResolver implementation.

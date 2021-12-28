@@ -11,7 +11,7 @@ import (
 )
 
 func (r *sensorResolver) ID(ctx context.Context, obj *types.Sensor) (string, error) {
-	return EncodeID("sensor", *obj.ID), nil
+	return EncodeID("sensor", obj.Model.ID), nil
 }
 
 func (r *sensorResolver) NodeID(ctx context.Context, obj *types.Sensor) (int, error) {

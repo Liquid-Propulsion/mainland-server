@@ -2,6 +2,7 @@ package systems
 
 import (
 	"context"
+	"errors"
 	"log"
 	"time"
 
@@ -47,7 +48,7 @@ func NewSensorsSystem() *SensorsSystem {
 	return sensors
 }
 
-func (sensors *SensorsSystem) UpdateSensors() {
+func (sensors *SensorsSystem) Reset() {
 	sensors.sensors = make(map[SensorKey]types.Sensor)
 	var sensorsFromDB []types.Sensor
 	sql.Database.Find(&sensorsFromDB)
@@ -63,16 +64,13 @@ func (sensors *SensorsSystem) Run() {
 	channel := canbackend.CurrentCANBackend.SensorDataChannel()
 	for {
 		data := <-channel
-		sensors.channel <- SensorUpdate{
-			Time:       time.Now(),
-			NodeID:     uint8(data.NodeId),
-			SensorID:   data.SensorId,
-			SensorData: data.SensorData,
-			SensorType: data.SensorType,
+		sensor, ok := sensors.sensors[SensorKey{uint8(data.NodeId), data.SensorId}]
+		if !ok {
+			log.Printf("Sensor not registered")
+			continue
 		}
-		sensor := sensors.sensors[SensorKey{uint8(data.NodeId), data.SensorId}]
 		out, err := tengo.Eval(context.Background(), sensor.TransformCode, map[string]interface{}{
-			"data": data.SensorData,
+			"data": int64(data.SensorData),
 		})
 		var sensorDataTransformed float32 = 0.0
 
@@ -82,9 +80,14 @@ func (sensors *SensorsSystem) Run() {
 				sensorDataTransformed = v
 			case float64:
 				sensorDataTransformed = float32(v)
+			case int:
+				sensorDataTransformed = float32(v)
+			case int64:
+				sensorDataTransformed = float32(v)
 			}
 		} else {
 			log.Printf("Couldn't transform Sensor Data: %s", err)
+			continue
 		}
 
 		sensors.data[SensorKey{uint8(data.NodeId), data.SensorId}] = SensorData{
@@ -93,34 +96,36 @@ func (sensors *SensorsSystem) Run() {
 			SensorDataRaw: data.SensorData,
 			SensorType:    data.SensorType,
 		}
-		timeseries.Database.InsertRows([]tstorage.Row{
-			{
-				Metric: "sensor",
-				Labels: []tstorage.Label{
-					{Name: "node_id", Value: string(data.NodeId)},
-					{Name: "sensor_id", Value: string(data.SensorId)},
-					{Name: "sensor_type", Value: string(data.SensorType)},
+		if CurrentEngine.State() == types.ARMED {
+			timeseries.Database.InsertRows([]tstorage.Row{
+				{
+					Metric: "sensor",
+					Labels: []tstorage.Label{
+						{Name: "node_id", Value: string(data.NodeId)},
+						{Name: "sensor_id", Value: string(data.SensorId)},
+						{Name: "sensor_type", Value: string(data.SensorType)},
+					},
+					DataPoint: tstorage.DataPoint{
+						Timestamp: time.Now().UnixNano(),
+						Value:     float64(sensorDataTransformed),
+					},
 				},
-				DataPoint: tstorage.DataPoint{
-					Timestamp: time.Now().UnixNano(),
-					Value:     float64(sensorDataTransformed),
+			})
+			timeseries.Database.InsertRows([]tstorage.Row{
+				{
+					Metric: "sensor_raw",
+					Labels: []tstorage.Label{
+						{Name: "node_id", Value: string(data.NodeId)},
+						{Name: "sensor_id", Value: string(data.SensorId)},
+						{Name: "sensor_type", Value: string(data.SensorType)},
+					},
+					DataPoint: tstorage.DataPoint{
+						Timestamp: time.Now().UnixNano(),
+						Value:     float64(data.SensorData),
+					},
 				},
-			},
-		})
-		timeseries.Database.InsertRows([]tstorage.Row{
-			{
-				Metric: "sensor_raw",
-				Labels: []tstorage.Label{
-					{Name: "node_id", Value: string(data.NodeId)},
-					{Name: "sensor_id", Value: string(data.SensorId)},
-					{Name: "sensor_type", Value: string(data.SensorType)},
-				},
-				DataPoint: tstorage.DataPoint{
-					Timestamp: time.Now().UnixNano(),
-					Value:     float64(data.SensorData),
-				},
-			},
-		})
+			})
+		}
 	}
 }
 
@@ -128,7 +133,7 @@ func (sensors *SensorsSystem) GetLatestSensorData(nodeID uint8, sensorID uint8) 
 	if val, ok := sensors.data[SensorKey{nodeID, sensorID}]; ok {
 		return val, nil
 	}
-	return SensorData{}, nil
+	return SensorData{}, errors.New("no Sensor Data found")
 }
 
 func (sensors *SensorsSystem) GetSensorData(startTime int64, endTime int64, nodeID uint8, sensorID uint8) ([]*tstorage.DataPoint, error) {

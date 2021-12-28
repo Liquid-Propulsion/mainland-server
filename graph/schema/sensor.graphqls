@@ -14,3 +14,9 @@ input SensorInput {
     sensor_id: Int!
     transform_code: String!
 }
+
+input SensorQuery {
+    raw: Boolean!
+    node_id: Int!
+    sensor_id: Int!
+}

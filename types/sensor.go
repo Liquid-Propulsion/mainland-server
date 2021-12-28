@@ -6,7 +6,6 @@ import (
 
 type Sensor struct {
 	gorm.Model
-	ID            *uint
 	Name          string
 	Description   string
 	NodeID        uint8

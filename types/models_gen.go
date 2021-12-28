@@ -30,6 +30,12 @@ type SensorInput struct {
 	TransformCode string `json:"transform_code"`
 }
 
+type SensorQuery struct {
+	Raw      bool `json:"raw"`
+	NodeID   int  `json:"node_id"`
+	SensorID int  `json:"sensor_id"`
+}
+
 type SolenoidInput struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
