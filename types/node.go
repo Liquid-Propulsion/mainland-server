@@ -1,12 +1,9 @@
 package types
 
-import (
-	"gorm.io/gorm"
-)
-
-type Node struct {
-	gorm.Model
+type IslandNode struct {
+	Model
 	Name        string
 	Description string
-	NodeID      uint8
 }
+
+func (node *IslandNode) IsNode() {}

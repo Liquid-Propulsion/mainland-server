@@ -9,14 +9,20 @@ import (
 type CANType string
 
 const (
-	OPENCAN CANType = "OPENCAN"
-	MOCK    CANType = "MOCK"
+	SOCKETCAN CANType = "SOCKETCAN"
+	USB       CANType = "USB"
+	TCP       CANType = "TCP"
+	MOCK      CANType = "MOCK"
 )
 
 type Config struct {
 	SQLite struct {
 		DSN string `mapstructure:"dsn"`
 	} `mapstructure:"sqlite"`
+	DefaultUser struct {
+		Username string `mapstructure:"username"`
+		Password string `mapstructure:"password"`
+	} `mapstructure:"default_user"`
 	Lockout struct {
 		Enabled    bool
 		ListenAddr string `mapstructure:"listen_addr"`
@@ -30,6 +36,10 @@ type Config struct {
 	CAN struct {
 		CANType       CANType `mapstructure:"can_type"`
 		InterfaceName string  `mapstructure:"interface_name"`
+		Host          string  `mapstructure:"host"`
+		Port          int     `mapstructure:"port"`
+		SerialPort    string  `mapstructure:"serial_port"`
+		BaudRate      int     `mapstructure:"baud_rate"`
 	} `mapstructure:"can"`
 }
 
@@ -39,6 +49,10 @@ func Init() {
 	v := viper.NewWithOptions(viper.KeyDelimiter(":"))
 	v.SetDefault("sqlite", map[string]interface{}{
 		"dsn": "./main.db",
+	})
+	v.SetDefault("default_user", map[string]interface{}{
+		"username": "test",
+		"password": "test",
 	})
 	v.SetDefault("lockout", map[string]interface{}{
 		"enabled":     true,
@@ -53,6 +67,10 @@ func Init() {
 	v.SetDefault("can", map[string]interface{}{
 		"can_type":       "MOCK",
 		"interface_name": "can0",
+		"host":           "localhost",
+		"port":           8881,
+		"serial_port":    "/dev/tty.usbserial-14140",
+		"baud_rate":      500000000,
 	})
 	v.SetConfigName("config")
 	v.SetConfigType("yaml")

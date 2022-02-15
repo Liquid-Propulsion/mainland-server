@@ -19,9 +19,9 @@ type Engine struct {
 	SensorsSystem    *SensorsSystem
 	StagingSystem    *StagingSystem
 	SafetySystem     *SafetySystem
-	TestSystem       *TestSystem
 	EvalSystem       *EvalSystem
 	TestButton       *TestButton
+	NodeSystem       *NodeSystem
 	previousTickTime time.Time
 }
 
@@ -35,8 +35,8 @@ func Init() {
 	engine.SensorsSystem = NewSensorsSystem()
 	engine.StagingSystem = NewStagingSystem()
 	engine.SafetySystem = NewSafetySystem()
-	engine.TestSystem = NewTestSystem()
 	engine.EvalSystem = NewEvalSystem()
+	engine.NodeSystem = NewNodeSystem()
 	engine.previousTickTime = time.Now()
 	engine.start()
 	CurrentEngine = engine
@@ -74,34 +74,25 @@ func (engine *Engine) tickLoop() {
 					engine.SetState(types.SAFE)
 				}
 			}
-			err := canbackend.CurrentCANBackend.SendPower(canpackets.PowerPacket{
-				SystemPowered: true,
+			stage := engine.StagingSystem.GetCurrentStage()
+			err := canbackend.CurrentCANBackend.SendStage(canpackets.StagePacket{
+				SolenoidState: stage.SolenoidState,
 			})
 			if err != nil {
-				log.Printf("Couldn't send power packet: %s", err)
-			}
-			stage := engine.StagingSystem.GetCurrentStage()
-			if stage != nil {
-				err = canbackend.CurrentCANBackend.SendStage(canpackets.StagePacket{
-					SystemReady: true,
-					Stage:       canpackets.Stage(engine.StagingSystem.GetCurrentStage().CANID),
-				})
-				if err != nil {
-					log.Printf("Couldn't send stage packet: %s", err)
-				}
+				log.Printf("Couldn't send stage packet: %s", err)
 			}
 		case types.TEST:
 			if !engine.TestButtonHeld() {
 				engine.SetState(types.SAFE)
 				break
 			}
-			err := canbackend.CurrentCANBackend.SendPower(canpackets.PowerPacket{
-				SystemPowered: true,
+			stage := engine.StagingSystem.GetCurrentStage()
+			err := canbackend.CurrentCANBackend.SendStage(canpackets.StagePacket{
+				SolenoidState: stage.SolenoidState,
 			})
 			if err != nil {
-				log.Printf("Couldn't send power packet: %s", err)
+				log.Printf("Couldn't send stage packet: %s", err)
 			}
-			engine.TestSystem.Tick()
 		}
 		engine.previousTickTime = time.Now()
 		// There are 50 ticks in every second.
@@ -120,7 +111,6 @@ func (engine *Engine) HasRPIO() bool {
 func (engine *Engine) Reset() {
 	engine.StagingSystem.Reset()
 	engine.SafetySystem.Reset()
-	engine.TestSystem.Reset()
 	engine.SensorsSystem.Reset()
 }
 
@@ -136,7 +126,7 @@ func (engine *Engine) SetState(state types.EngineState) error {
 		if engine.LockoutSystem.LockedOut() && !engine.TestButtonHeld() {
 			return errors.New("when the engine is locked out, the test button must be held to go into test state")
 		}
-		engine.TestSystem.Reset()
+		engine.StagingSystem.Reset()
 	}
 	engine.state = state
 	return nil

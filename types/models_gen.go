@@ -2,6 +2,16 @@
 
 package types
 
+import (
+	"fmt"
+	"io"
+	"strconv"
+)
+
+type Node interface {
+	IsNode()
+}
+
 type CreateUserInput struct {
 	Name     string `json:"name"`
 	Username string `json:"username"`
@@ -15,6 +25,12 @@ type Engine struct {
 	LockoutEnabled bool        `json:"lockoutEnabled"`
 }
 
+type IslandNodeInput struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 type SafetyCheckInput struct {
 	Name        string      `json:"name"`
 	Description string      `json:"description"`
@@ -23,34 +39,79 @@ type SafetyCheckInput struct {
 }
 
 type SensorInput struct {
+	ID            int    `json:"id"`
 	Name          string `json:"name"`
 	Description   string `json:"description"`
-	NodeID        int    `json:"node_id"`
-	SensorID      int    `json:"sensor_id"`
 	TransformCode string `json:"transform_code"`
 }
 
 type SensorQuery struct {
-	Raw      bool `json:"raw"`
-	NodeID   int  `json:"node_id"`
-	SensorID int  `json:"sensor_id"`
+	Raw bool   `json:"raw"`
+	ID  string `json:"id"`
+}
+
+type SignInResponse struct {
+	Type        SignInResponseType `json:"type"`
+	Session     string             `json:"session"`
+	LockOutTime string             `json:"lockOutTime"`
+	ExpiryTime  string             `json:"expiryTime"`
 }
 
 type SolenoidInput struct {
+	ID          int    `json:"id"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
-	CanID       int    `json:"can_id"`
 }
 
 type StageInput struct {
-	Name         string `json:"name"`
-	Description  string `json:"description"`
-	CanID        int    `json:"can_id"`
-	PreStageCode string `json:"pre_stage_code"`
-	Duration     string `json:"duration"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	SolenoidState []bool `json:"solenoid_state"`
+	Duration      string `json:"duration"`
 }
 
 type UpdateUserInput struct {
 	Name     string `json:"name"`
 	Username string `json:"username"`
+}
+
+type SignInResponseType string
+
+const (
+	SignInResponseTypeTotp  SignInResponseType = "TOTP"
+	SignInResponseTypeValid SignInResponseType = "VALID"
+)
+
+var AllSignInResponseType = []SignInResponseType{
+	SignInResponseTypeTotp,
+	SignInResponseTypeValid,
+}
+
+func (e SignInResponseType) IsValid() bool {
+	switch e {
+	case SignInResponseTypeTotp, SignInResponseTypeValid:
+		return true
+	}
+	return false
+}
+
+func (e SignInResponseType) String() string {
+	return string(e)
+}
+
+func (e *SignInResponseType) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = SignInResponseType(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid SignInResponseType", str)
+	}
+	return nil
+}
+
+func (e SignInResponseType) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

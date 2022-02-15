@@ -12,8 +12,6 @@ type CANBackend interface {
 	SensorDataChannel() chan canpackets.SensorDataPacket
 	// Returns a channel that returns a pongs of Island Nodes
 	PongChannel() chan canpackets.PongPacket
-	// Sends a Solenoid Command
-	SendSolenoidCommand(canpackets.SolenoidStatePacket) error
 	// Sends a Stage Command
 	SendStage(canpackets.StagePacket) error
 	// Sends a Power Command

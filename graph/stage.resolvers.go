@@ -14,8 +14,8 @@ func (r *stageResolver) ID(ctx context.Context, obj *types.Stage) (string, error
 	return EncodeID("stage", obj.Model.ID), nil
 }
 
-func (r *stageResolver) CanID(ctx context.Context, obj *types.Stage) (int, error) {
-	return int(obj.CANID), nil
+func (r *stageResolver) SolenoidState(ctx context.Context, obj *types.Stage) ([]bool, error) {
+	return obj.SolenoidState[:], nil
 }
 
 func (r *stageResolver) Duration(ctx context.Context, obj *types.Stage) (string, error) {

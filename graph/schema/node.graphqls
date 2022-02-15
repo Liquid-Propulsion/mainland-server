@@ -1,0 +1,12 @@
+type IslandNode implements Node {
+	id: ID!
+	name: String!
+    description: String!
+    is_online: Boolean!
+}
+
+input IslandNodeInput {
+    id: Int!
+    name: String!
+    description: String!
+}

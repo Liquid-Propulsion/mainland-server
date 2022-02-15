@@ -14,10 +14,6 @@ func (r *solenoidResolver) ID(ctx context.Context, obj *types.Solenoid) (string,
 	return EncodeID("solenoid", obj.Model.ID), nil
 }
 
-func (r *solenoidResolver) CanID(ctx context.Context, obj *types.Solenoid) (int, error) {
-	return int(obj.CANID), nil
-}
-
 // Solenoid returns generated.SolenoidResolver implementation.
 func (r *Resolver) Solenoid() generated.SolenoidResolver { return &solenoidResolver{r} }
 

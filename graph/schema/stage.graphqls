@@ -1,16 +1,14 @@
-type Stage {
+type Stage implements Node {
 	id: ID!
 	name: String!
     description: String!
-    can_id: Int!
-    pre_stage_code: String!
+    solenoid_state: [Boolean!]!
     duration: Duration!
 }
 
 input StageInput {
     name: String!
     description: String!
-    can_id: Int!
-    pre_stage_code: String!
+    solenoid_state: [Boolean!]!
     duration: Duration!
 }

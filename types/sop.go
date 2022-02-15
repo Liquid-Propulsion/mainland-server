@@ -10,3 +10,5 @@ type SOP struct {
 	Description string
 	Code        string
 }
+
+func (node *SOP) IsNode() {}

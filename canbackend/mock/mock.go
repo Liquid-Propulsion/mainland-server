@@ -22,14 +22,10 @@ func New() *MockCANBackend {
 	backend.pongChannel = make(chan canpackets.PongPacket)
 	go func() {
 		for {
-			for _, nodeID := range fakeNodeIDs {
-				for _, sensorID := range fakeSensorIDs {
-					backend.sensorDataChannel <- canpackets.SensorDataPacket{
-						NodeId:     canpackets.ID(nodeID),
-						SensorId:   sensorID,
-						SensorType: canpackets.PRESSURE_TRANSDUCER,
-						SensorData: uint32(math.Abs(10000 + (math.Sin(float64(time.Now().UnixMilli())/10000.0) * 1000))),
-					}
+			for _, sensorID := range fakeSensorIDs {
+				backend.sensorDataChannel <- canpackets.SensorDataPacket{
+					SensorId:   sensorID,
+					SensorData: uint32(math.Abs(10000 + (math.Sin(float64(time.Now().UnixMilli())/10000.0) * 1000))),
 				}
 			}
 			time.Sleep(time.Millisecond * 20)
@@ -50,13 +46,8 @@ func (backend *MockCANBackend) PongChannel() chan canpackets.PongPacket {
 	return backend.pongChannel
 }
 
-func (backend *MockCANBackend) SendSolenoidCommand(packet canpackets.SolenoidStatePacket) error {
-	log.Printf("MOCKCAN: Set Solenoid %d to %d", packet.Id, packet.State)
-	return nil
-}
-
 func (backend *MockCANBackend) SendStage(packet canpackets.StagePacket) error {
-	log.Printf("MOCKCAN: Set State to %d", packet.Stage)
+	log.Printf("MOCKCAN: Set State to %v", packet.SolenoidState)
 	return nil
 }
 
@@ -69,7 +60,7 @@ func (backend *MockCANBackend) SendPing() error {
 	log.Printf("MOCKCAN: Ping all Nodes")
 	for _, node := range fakeNodeIDs {
 		backend.pongChannel <- canpackets.PongPacket{
-			NodeId:   canpackets.ID(node),
+			NodeId:   node,
 			NodeType: canpackets.SOLENOID_NODE,
 		}
 	}
@@ -77,6 +68,6 @@ func (backend *MockCANBackend) SendPing() error {
 }
 
 func (backend *MockCANBackend) SendPower(power canpackets.PowerPacket) error {
-	log.Printf("MOCKCAN: Power is online")
+	log.Printf("MOCKCAN: Power is ", power.SystemPowered)
 	return nil
 }

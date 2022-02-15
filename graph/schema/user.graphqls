@@ -1,8 +1,9 @@
 # The Information available on users for all.
-type User {
+type User implements Node {
     id: ID!
     name: String!
     username: String!
+    totp_enabled: Boolean!
 }
 
 # The Input for updateing a user.

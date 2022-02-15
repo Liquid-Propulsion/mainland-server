@@ -1,12 +1,9 @@
 package types
 
-import (
-	"gorm.io/gorm"
-)
-
 type Solenoid struct {
-	gorm.Model
+	Model
 	Name        string
 	Description string
-	CANID       uint8
 }
+
+func (node *Solenoid) IsNode() {}

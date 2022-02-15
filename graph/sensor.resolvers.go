@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"github.com/Liquid-Propulsion/mainland-server/graph/generated"
+	"github.com/Liquid-Propulsion/mainland-server/systems"
 	"github.com/Liquid-Propulsion/mainland-server/types"
 )
 
@@ -14,12 +15,20 @@ func (r *sensorResolver) ID(ctx context.Context, obj *types.Sensor) (string, err
 	return EncodeID("sensor", obj.Model.ID), nil
 }
 
-func (r *sensorResolver) NodeID(ctx context.Context, obj *types.Sensor) (int, error) {
-	return int(obj.NodeID), nil
+func (r *sensorResolver) RawValue(ctx context.Context, obj *types.Sensor) (float64, error) {
+	data, err := systems.CurrentEngine.SensorsSystem.GetLatestSensorData(obj.ID)
+	if err != nil {
+		return 0.0, err
+	}
+	return float64(data.SensorDataRaw), nil
 }
 
-func (r *sensorResolver) SensorID(ctx context.Context, obj *types.Sensor) (int, error) {
-	return int(obj.SensorID), nil
+func (r *sensorResolver) Value(ctx context.Context, obj *types.Sensor) (float64, error) {
+	data, err := systems.CurrentEngine.SensorsSystem.GetLatestSensorData(obj.ID)
+	if err != nil {
+		return 0.0, err
+	}
+	return float64(data.SensorData), nil
 }
 
 // Sensor returns generated.SensorResolver implementation.

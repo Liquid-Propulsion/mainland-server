@@ -1,0 +1,5 @@
+# An object with a Globally Unique ID
+interface Node {
+  # The ID of the object.
+  id: ID!
+}

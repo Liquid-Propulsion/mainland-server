@@ -11,3 +11,5 @@ type SafetyCheck struct {
 	ValidState  EngineState
 	Code        string
 }
+
+func (node *SafetyCheck) IsNode() {}

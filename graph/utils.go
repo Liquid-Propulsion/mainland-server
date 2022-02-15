@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/matthewhartstonge/argon2"
+	"github.com/spf13/cast"
 )
 
 func EncodeID(typeName string, id uint) string {
@@ -27,7 +28,11 @@ func DecodeID(id string) (string, uint, error) {
 		if err != nil {
 			return "", 0, err
 		}
-		return typeName, uint(id), nil
+		uid, err := cast.ToUintE(id)
+		if err != nil {
+			return "", 0, err
+		}
+		return typeName, uid, nil
 	}
 	return "", 0, errors.New("invalid id")
 }
@@ -36,4 +41,13 @@ func EncodePassword(password string) ([]byte, error) {
 	argon := argon2.DefaultConfig()
 
 	return argon.HashEncoded([]byte(password))
+}
+
+func VerifyPassword(encoded []byte, password string) bool {
+	ok, err := argon2.VerifyEncoded([]byte(password), encoded)
+	if err != nil {
+		return false
+	}
+
+	return ok
 }

@@ -1,22 +1,20 @@
-type Sensor {
+type Sensor implements Node {
     id: ID!
     name: String!
     description: String!
-    node_id: Int!
-    sensor_id: Int!
     transform_code: String!
+    raw_value: Float!
+    value: Float!
 }
 
 input SensorInput {
+    id: Int!
     name: String!
     description: String!
-    node_id: Int!
-    sensor_id: Int!
     transform_code: String!
 }
 
 input SensorQuery {
     raw: Boolean!
-    node_id: Int!
-    sensor_id: Int!
+    id: ID!
 }

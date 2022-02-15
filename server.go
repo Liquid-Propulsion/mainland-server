@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
+	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/Liquid-Propulsion/mainland-server/canbackend"
@@ -12,10 +14,10 @@ import (
 	"github.com/Liquid-Propulsion/mainland-server/database/timeseries"
 	"github.com/Liquid-Propulsion/mainland-server/graph"
 	"github.com/Liquid-Propulsion/mainland-server/graph/generated"
+	"github.com/Liquid-Propulsion/mainland-server/session"
 	"github.com/Liquid-Propulsion/mainland-server/systems"
+	"github.com/go-chi/chi"
 )
-
-const defaultPort = "8080"
 
 func main() {
 	config.Init()
@@ -24,11 +26,26 @@ func main() {
 	timeseries.Init(false, config.CurrentConfig.TimeSeries.Directory)
 	systems.Init()
 
-	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
+	configuration := generated.Config{Resolvers: &graph.Resolver{}}
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+	configuration.Directives.IsAuthenticated = func(ctx context.Context, obj interface{}, next graphql.Resolver) (interface{}, error) {
+		if _, ok := session.ForContext(ctx); !ok {
+			//return nil, fmt.Errorf("access denied")
+		}
+
+		// or let it pass through
+		return next(ctx)
+	}
+
+	srv := handler.NewDefaultServer(generated.NewExecutableSchema(configuration))
+
+	router := chi.NewRouter()
+
+	router.Use(session.Middleware())
+
+	router.Handle("/", playground.Handler("LPDT", "/query"))
+	router.Handle("/query", srv)
 
 	log.Printf("Listening on %s for GraphQL Connections...", config.CurrentConfig.HTTP.ListenAddr)
-	log.Fatal(http.ListenAndServe(config.CurrentConfig.HTTP.ListenAddr, nil))
+	log.Fatal(http.ListenAndServe(config.CurrentConfig.HTTP.ListenAddr, router))
 }

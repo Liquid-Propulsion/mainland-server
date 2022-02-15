@@ -1,12 +1,11 @@
-type Solenoid {
+type Solenoid implements Node {
     id: ID!
     name: String!
     description: String!
-    can_id: Int!
 }
 
 input SolenoidInput {
+    id: Int!
     name: String!
     description: String!
-    can_id: Int!
 }

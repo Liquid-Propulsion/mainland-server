@@ -23,7 +23,7 @@ func NewStagingSystem() *StagingSystem {
 }
 
 func (staging *StagingSystem) Reset() {
-	res := sql.Database.Order("can_id").Find(&staging.stages)
+	res := sql.Database.Order("id").Find(&staging.stages)
 	if res.Error != nil {
 		log.Printf("Couldn't query for stages: %s", res.Error)
 	}

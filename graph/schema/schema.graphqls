@@ -1,65 +1,116 @@
+directive @isAuthenticated on FIELD_DEFINITION
+
+enum SignInResponseType {
+  TOTP
+  VALID
+}
+
+type SignInResponse {
+  type: SignInResponseType!
+  session: String!
+  lockOutTime: DateTime!
+  expiryTime: DateTime!
+}
+
+type TOTPInfo {
+  secret: String!
+  uri: String!
+}
+
 type Query {
+  node(id: ID!): Node @isAuthenticated
   # Returns the current Engine.
-  engine: Engine!
+  engine: Engine! @isAuthenticated
   # Returns all users.
-  users: [User!]!
+  users: [User!]! @isAuthenticated
   # Returns all stages.
-  stages: [Stage!]!
+  stages: [Stage!]! @isAuthenticated
   # Returns all solenoids
-  solenoids: [Solenoid!]!
+  solenoids: [Solenoid!]! @isAuthenticated
   # Returns all sensors
-  sensors: [Sensor!]!
+  sensors: [Sensor!]! @isAuthenticated
   # Returns all safety checks
-  safety_checks: [SafetyCheck!]!
+  safety_checks: [SafetyCheck!]! @isAuthenticated
+  # Returns all island nodes
+  island_nodes: [IslandNode!]! @isAuthenticated
 
   # -----------------SENSOR DATA-----------------
-  latestSensorData(queries: [SensorQuery!]!): [Float!]!
+  latestSensorData(queries: [SensorQuery!]!): [Float!]! @isAuthenticated
 }
 
 type Mutation {
   # -----------------ENGINE-----------------
   # Set the current engine's state.
-  setEngineState(state: EngineState!): Engine!
+  setEngineState(state: EngineState!): Engine! @isAuthenticated
   # Resets all engine systems.
-  resetEngine: Engine!
+  resetEngine: Engine! @isAuthenticated
 
   # -----------------USER-----------------
   # Create a new user.
-  createUser(user: CreateUserInput!): User!
+  createUser(user: CreateUserInput!): User! @isAuthenticated
   # Update your information. You can only update your own information.
-  updateUser(id: ID!, user: UpdateUserInput!): User!
+  updateUser(id: ID!, user: UpdateUserInput!): User! @isAuthenticated
+  # Updates the password of a user.
+  updateUserPassword(id: ID!, password: String!): User! @isAuthenticated
+  # Updates the TOTP of a user.
+  updateUserTOTP(id: ID!, enabled: Boolean!): TOTPInfo! @isAuthenticated
   # Delete a user by ID.
-  deleteUser(id: ID!): User!
+  deleteUser(id: ID!): User! @isAuthenticated
 
   # -----------------STAGE-----------------
   # Create a new stage.
-  createStage(stage: StageInput!): Stage!
+  createStage(stage: StageInput!): Stage! @isAuthenticated
   # Update a stage.
-  updateStage(id: ID!, stage: StageInput!): Stage!
+  updateStage(id: ID!, stage: StageInput!): Stage! @isAuthenticated
   # Delete a stage.
-  deleteStage(id: ID!): Stage!
+  deleteStage(id: ID!): Stage! @isAuthenticated
 
   # -----------------SOLENOID-----------------
   # Create a new solenoid.
-  createSolenoid(solenoid: SolenoidInput!): Solenoid!
+  createSolenoid(solenoid: SolenoidInput!): Solenoid! @isAuthenticated
   # Update a solenoid.
-  updateSolenoid(id: ID!, solenoid: SolenoidInput!): Solenoid!
+  updateSolenoid(id: ID!, solenoid: SolenoidInput!): Solenoid! @isAuthenticated
   # Delete a solenoid.
-  deleteSolenoid(id: ID!): Solenoid!
+  deleteSolenoid(id: ID!): Solenoid! @isAuthenticated
 
   # -----------------SENSOR-----------------
   # Create a new sensor.
-  createSensor(sensor: SensorInput!): Sensor!
+  createSensor(sensor: SensorInput!): Sensor! @isAuthenticated
   # Update a sensor.
-  updateSensor(id: ID!, sensor: SensorInput!): Sensor!
+  updateSensor(id: ID!, sensor: SensorInput!): Sensor! @isAuthenticated
   # Delete a sensor.
-  deleteSensor(id: ID!): Sensor!
+  deleteSensor(id: ID!): Sensor! @isAuthenticated
 
   # -----------------SAFETY CHECK-----------------
   # Create a new safety check.
-  createSafetyCheck(check: SafetyCheckInput!): SafetyCheck!
+  createSafetyCheck(check: SafetyCheckInput!): SafetyCheck! @isAuthenticated
   # Update a sensor.
-  updateSafetyCheck(id: ID!, check: SafetyCheckInput!): SafetyCheck!
+  updateSafetyCheck(id: ID!, check: SafetyCheckInput!): SafetyCheck! @isAuthenticated
   # Delete a sensor.
-  deleteSafetyCheck(id: ID!): SafetyCheck!
+  deleteSafetyCheck(id: ID!): SafetyCheck! @isAuthenticated
+
+  # -----------------ISLAND NODE-----------------
+  # Create a new island node.
+  createIslandNode(island: IslandNodeInput!): IslandNode! @isAuthenticated
+  # Update a island node.
+  updateIslandNode(id: ID!, island: IslandNodeInput!): IslandNode! @isAuthenticated
+  # Delete a island node.
+  deleteIslandNode(id: ID!): IslandNode! @isAuthenticated
+
+  # -----------------AUTHORIZATION-----------------
+  # Signs in the User with their Username and Password.
+  signIn(username: String!, password: String!): SignInResponse!
+  # Verifies a User's TOTP Code, requires them to have set the session cookie first.
+  totpVerify(code: String!): SignInResponse!
+  # Signs the user out.
+  signOut: Boolean! @isAuthenticated
+  # Locks the user out and requires them to do two factor auth again.
+  lockOut: SignInResponse! @isAuthenticated
+  # Prevents an automatic lockout from occurring. (Adds 1 minute to the lockout timer)
+  preventLockOut: SignInResponse! @isAuthenticated
+}
+
+type Subscription {
+  nodeUpserted: String! # Sent when a node is updated or created.
+  nodeDeleted: String! # Sent when a node is deleted.
 }

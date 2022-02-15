@@ -3,10 +3,10 @@ package systems
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
-	canpackets "github.com/Liquid-Propulsion/canpackets/go"
 	"github.com/Liquid-Propulsion/mainland-server/canbackend"
 	"github.com/Liquid-Propulsion/mainland-server/database/sql"
 	"github.com/Liquid-Propulsion/mainland-server/database/timeseries"
@@ -15,48 +15,38 @@ import (
 	"github.com/nakabonne/tstorage"
 )
 
-type SensorKey struct {
-	NodeID   uint8
-	SensorID uint8
-}
-
 type SensorData struct {
 	Time          time.Time
 	SensorDataRaw uint32
 	SensorData    float32
-	SensorType    canpackets.SensorType
 }
 
 type SensorUpdate struct {
 	Time       time.Time
-	NodeID     uint8
-	SensorID   uint8
+	SensorID   uint
 	SensorData uint32
-	SensorType canpackets.SensorType
 }
 
 type SensorsSystem struct {
-	data    map[SensorKey]SensorData
-	sensors map[SensorKey]types.Sensor
+	data    map[uint]SensorData
+	sensors map[uint]types.Sensor
 	channel chan SensorUpdate
 }
 
 func NewSensorsSystem() *SensorsSystem {
 	sensors := new(SensorsSystem)
-	sensors.data = make(map[SensorKey]SensorData)
+	sensors.data = make(map[uint]SensorData)
 	sensors.channel = make(chan SensorUpdate)
 	return sensors
 }
 
 func (sensors *SensorsSystem) Reset() {
-	sensors.sensors = make(map[SensorKey]types.Sensor)
+	sensors.data = make(map[uint]SensorData)
+	sensors.sensors = make(map[uint]types.Sensor)
 	var sensorsFromDB []types.Sensor
 	sql.Database.Find(&sensorsFromDB)
 	for _, sensor := range sensorsFromDB {
-		sensors.sensors[SensorKey{
-			NodeID:   sensor.NodeID,
-			SensorID: sensor.SensorID,
-		}] = sensor
+		sensors.sensors[sensor.ID] = sensor
 	}
 }
 
@@ -64,7 +54,7 @@ func (sensors *SensorsSystem) Run() {
 	channel := canbackend.CurrentCANBackend.SensorDataChannel()
 	for {
 		data := <-channel
-		sensor, ok := sensors.sensors[SensorKey{uint8(data.NodeId), data.SensorId}]
+		sensor, ok := sensors.sensors[uint(data.SensorId)]
 		if !ok {
 			log.Printf("Sensor not registered")
 			continue
@@ -90,20 +80,17 @@ func (sensors *SensorsSystem) Run() {
 			continue
 		}
 
-		sensors.data[SensorKey{uint8(data.NodeId), data.SensorId}] = SensorData{
+		sensors.data[uint(data.SensorId)] = SensorData{
 			Time:          time.Now(),
 			SensorData:    sensorDataTransformed,
 			SensorDataRaw: data.SensorData,
-			SensorType:    data.SensorType,
 		}
 		if CurrentEngine.State() == types.ARMED {
 			timeseries.Database.InsertRows([]tstorage.Row{
 				{
 					Metric: "sensor",
 					Labels: []tstorage.Label{
-						{Name: "node_id", Value: string(data.NodeId)},
 						{Name: "sensor_id", Value: string(data.SensorId)},
-						{Name: "sensor_type", Value: string(data.SensorType)},
 					},
 					DataPoint: tstorage.DataPoint{
 						Timestamp: time.Now().UnixNano(),
@@ -115,9 +102,7 @@ func (sensors *SensorsSystem) Run() {
 				{
 					Metric: "sensor_raw",
 					Labels: []tstorage.Label{
-						{Name: "node_id", Value: string(data.NodeId)},
 						{Name: "sensor_id", Value: string(data.SensorId)},
-						{Name: "sensor_type", Value: string(data.SensorType)},
 					},
 					DataPoint: tstorage.DataPoint{
 						Timestamp: time.Now().UnixNano(),
@@ -129,16 +114,15 @@ func (sensors *SensorsSystem) Run() {
 	}
 }
 
-func (sensors *SensorsSystem) GetLatestSensorData(nodeID uint8, sensorID uint8) (SensorData, error) {
-	if val, ok := sensors.data[SensorKey{nodeID, sensorID}]; ok {
+func (sensors *SensorsSystem) GetLatestSensorData(sensorID uint) (SensorData, error) {
+	if val, ok := sensors.data[uint(sensorID)]; ok {
 		return val, nil
 	}
 	return SensorData{}, errors.New("no Sensor Data found")
 }
 
-func (sensors *SensorsSystem) GetSensorData(startTime int64, endTime int64, nodeID uint8, sensorID uint8) ([]*tstorage.DataPoint, error) {
+func (sensors *SensorsSystem) GetSensorData(startTime int64, endTime int64, sensorID uint) ([]*tstorage.DataPoint, error) {
 	return timeseries.Database.Select("sensor", []tstorage.Label{
-		{Name: "node_id", Value: string(nodeID)},
-		{Name: "sensor_id", Value: string(sensorID)},
+		{Name: "sensor_id", Value: fmt.Sprint(sensorID)},
 	}, startTime, endTime)
 }

@@ -51,16 +51,8 @@ func (backend *OpenCANBackend) PongChannel() chan canpackets.PongPacket {
 	return backend.pongChannel
 }
 
-func (backend *OpenCANBackend) SendSolenoidCommand(packet canpackets.SolenoidStatePacket) error {
-	frame, err := createFrame(0x02, packet.Encode())
-	if err != nil {
-		return err
-	}
-	return backend.bus.Publish(frame)
-}
-
 func (backend *OpenCANBackend) SendStage(packet canpackets.StagePacket) error {
-	frame, err := createFrame(0x00, packet.Encode())
+	frame, err := createFrame(0x01, packet.Encode())
 	if err != nil {
 		return err
 	}
@@ -83,7 +75,7 @@ func (backend *OpenCANBackend) SendPing() error {
 	return backend.bus.Publish(frame)
 }
 func (backend *OpenCANBackend) SendPower(power canpackets.PowerPacket) error {
-	frame, err := createFrame(0x00, []byte{})
+	frame, err := createFrame(0x00, power.Encode())
 	if err != nil {
 		return err
 	}
@@ -98,7 +90,7 @@ func createFrame(id uint32, src []byte) (can.Frame, error) {
 	var dst [8]uint8
 	copy(dst[:], src[:length])
 	frame := can.Frame{
-		ID:     0x02,
+		ID:     id,
 		Length: uint8(length),
 		Flags:  0,
 		Res0:   0,

@@ -5,6 +5,7 @@ import (
 
 	"github.com/Liquid-Propulsion/mainland-server/types"
 	"github.com/d5/tengo/v2"
+	"github.com/spf13/cast"
 )
 
 func EngineModule() map[string]tengo.Object {
@@ -17,22 +18,17 @@ func EngineModule() map[string]tengo.Object {
 	}
 }
 
-// Definition: `sensor_data_raw(node_id int, sensor_id int) int`
+// Definition: `sensor_data_raw(sensor_id int) int`
 func sensorDataRaw(args ...tengo.Object) (tengo.Object, error) {
-	if len(args) >= 2 {
-		switch node_id := args[0].(type) {
+	if len(args) >= 1 {
+		switch sensor_id := args[0].(type) {
 		case *tengo.Int:
-			switch sensor_id := args[1].(type) {
-			case *tengo.Int:
-				data, err := CurrentEngine.SensorsSystem.GetLatestSensorData(uint8(node_id.Value), uint8(sensor_id.Value))
-				return &tengo.Int{Value: int64(data.SensorDataRaw)}, err
-			default:
-				return nil, tengo.ErrInvalidArgumentType{
-					Name:     "second",
-					Expected: "int",
-					Found:    args[1].TypeName(),
-				}
+			value, err := cast.ToUintE(sensor_id.Value)
+			if err != nil {
+				return nil, err
 			}
+			data, err := CurrentEngine.SensorsSystem.GetLatestSensorData(value)
+			return &tengo.Int{Value: int64(data.SensorDataRaw)}, err
 		default:
 			return nil, tengo.ErrInvalidArgumentType{
 				Name:     "first",
@@ -44,22 +40,17 @@ func sensorDataRaw(args ...tengo.Object) (tengo.Object, error) {
 	return nil, tengo.ErrWrongNumArguments
 }
 
-// Definition: `sensor_data(node_id int, sensor_id int) float`
+// Definition: `sensor_data(sensor_id int) float`
 func sensorData(args ...tengo.Object) (tengo.Object, error) {
-	if len(args) >= 2 {
-		switch node_id := args[0].(type) {
+	if len(args) >= 1 {
+		switch sensor_id := args[0].(type) {
 		case *tengo.Int:
-			switch sensor_id := args[1].(type) {
-			case *tengo.Int:
-				data, err := CurrentEngine.SensorsSystem.GetLatestSensorData(uint8(node_id.Value), uint8(sensor_id.Value))
-				return &tengo.Float{Value: float64(data.SensorData)}, err
-			default:
-				return nil, tengo.ErrInvalidArgumentType{
-					Name:     "second",
-					Expected: "int",
-					Found:    args[1].TypeName(),
-				}
+			value, err := cast.ToUintE(sensor_id.Value)
+			if err != nil {
+				return nil, err
 			}
+			data, err := CurrentEngine.SensorsSystem.GetLatestSensorData(value)
+			return &tengo.Float{Value: float64(data.SensorData)}, err
 		default:
 			return nil, tengo.ErrInvalidArgumentType{
 				Name:     "first",
